@@ -1,0 +1,3555 @@
+/* SMS Pro — Modern app theme */
+
+:root {
+  --sms-primary: #6366f1;
+  --sms-primary-dark: #4f46e5;
+  --sms-accent: #06b6d4;
+  --sms-success: #10b981;
+  --sms-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+  --sms-gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #ec4899 100%);
+  --sms-shadow: 0 10px 40px rgba(99, 102, 241, 0.15);
+  --sms-shadow-lg: 0 25px 60px rgba(99, 102, 241, 0.2);
+  --sms-radius: 16px;
+  --sms-radius-lg: 24px;
+}
+
+/* ── Auth pages ── */
+.sms-auth-page {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.sms-auth-page::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+  top: -200px;
+  right: -100px;
+  pointer-events: none;
+}
+
+.sms-auth-page::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, transparent 70%);
+  bottom: -100px;
+  left: -50px;
+  pointer-events: none;
+}
+
+.sms-auth-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: var(--sms-radius-lg);
+  box-shadow: var(--sms-shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  max-width: 960px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  animation: sms-fade-up 0.6s ease-out;
+}
+
+.sms-auth-brand {
+  background: var(--sms-gradient);
+  color: white;
+  padding: 3rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.sms-auth-brand h2 {
+  font-weight: 800;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.sms-auth-brand p {
+  opacity: 0.9;
+  line-height: 1.7;
+}
+
+.sms-auth-form {
+  padding: 2.5rem;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.sms-auth-form h1 {
+  font-weight: 700;
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+}
+
+.sms-auth-form .sms-auth-subtitle {
+  color: #64748b;
+  margin-bottom: 1.5rem;
+}
+
+.sms-auth-form .form-label {
+  color: #334155;
+}
+
+.sms-auth-form a {
+  color: var(--sms-primary);
+}
+
+.sms-input-group {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.sms-input-group .form-control {
+  background: transparent;
+  color: #0f172a;
+}
+
+.sms-input-group .form-control::placeholder {
+  color: #94a3b8;
+}
+
+.sms-input-group .sms-input-icon {
+  color: #64748b;
+}
+
+.sms-input-group:focus-within {
+  border-color: var(--sms-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  background: #ffffff;
+}
+
+/* Auth pages always use a light form panel — even when app theme is dark */
+[data-coreui-theme='dark'] .sms-auth-card {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+[data-coreui-theme='dark'] .sms-auth-form,
+[data-coreui-theme='dark'] .sms-auth-form h1,
+[data-coreui-theme='dark'] .sms-auth-form .form-label {
+  color: #0f172a;
+}
+
+[data-coreui-theme='dark'] .sms-auth-form .sms-auth-subtitle {
+  color: #64748b;
+}
+
+[data-coreui-theme='dark'] .sms-input-group {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-coreui-theme='dark'] .sms-input-group .form-control {
+  background: transparent;
+  color: #0f172a;
+}
+
+.sms-btn-glow {
+  background: var(--sms-gradient) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600;
+  padding: 0.65rem 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.sms-btn-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+/* ── Subscription page ── */
+.sms-sub-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  padding: 2rem 1rem 4rem;
+  color: #f8fafc;
+}
+
+.sms-sub-hero {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto 3rem;
+  animation: sms-fade-up 0.5s ease-out;
+}
+
+.sms-sub-hero h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  background: var(--sms-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+}
+
+.sms-sub-hero p {
+  font-size: 1.125rem;
+  color: #94a3b8;
+  line-height: 1.7;
+}
+
+.sms-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto 2.5rem;
+}
+
+.sms-pricing-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--sms-radius-lg);
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.sms-pricing-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: var(--sms-shadow);
+}
+
+.sms-pricing-card.featured {
+  border-color: var(--sms-primary);
+  background: linear-gradient(145deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+}
+
+.sms-pricing-card.featured::before {
+  content: 'Most Popular';
+  position: absolute;
+  top: 1rem;
+  right: -2rem;
+  background: var(--sms-gradient-warm);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 2.5rem;
+  transform: rotate(45deg);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sms-price {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: white;
+}
+
+.sms-price span {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+.sms-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+.sms-feature-list li {
+  padding: 0.5rem 0;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sms-feature-list li::before {
+  content: '✓';
+  color: var(--sms-success);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.sms-pay-panel {
+  max-width: 480px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sms-radius-lg);
+  padding: 2rem;
+  backdrop-filter: blur(12px);
+}
+
+.sms-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.sms-status-pill.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.sms-status-pill.expired {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.sms-trust-row {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-top: 3rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.sms-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Admin / dashboard polish ── */
+.sms-page-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.sms-page-title {
+  font-weight: 800;
+  font-size: 1.75rem;
+  background: var(--sms-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sms-page-subtitle {
+  color: #64748b;
+}
+
+.sms-page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.sms-glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-radius: var(--sms-radius) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.sms-stat-card {
+  border-radius: var(--sms-radius) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s;
+}
+
+.sms-stat-card:hover {
+  transform: translateY(-3px);
+}
+
+.sms-stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.sms-stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sms-stat-label {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.sms-user-card {
+  border-radius: var(--sms-radius) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+
+.sms-user-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sms-shadow);
+}
+
+.sms-user-card-self {
+  border: 2px solid var(--sms-primary) !important;
+}
+
+.sms-user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--sms-gradient);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.sms-search {
+  position: relative;
+}
+
+.sms-search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  z-index: 1;
+}
+
+.sms-search-input {
+  padding-left: 2.75rem !important;
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* Sidebar enhancement */
+.sidebar {
+  z-index: 1040;
+  background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%) !important;
+}
+
+@media (max-width: 991.98px) {
+  /* Only lock scroll when the mobile sidebar overlay is open */
+  .sidebar.show ~ .wrapper {
+    touch-action: none;
+    overflow: hidden;
+    max-height: 100vh;
+  }
+
+  .sidebar.show::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: -1;
+    backdrop-filter: blur(2px);
+  }
+}
+
+.sidebar-brand-full {
+  filter: brightness(1.2);
+}
+
+/* Animations */
+@keyframes sms-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sms-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.6);
+  }
+}
+
+.sms-pulse-cta {
+  animation: sms-pulse-glow 2s ease-in-out infinite;
+}
+
+[data-coreui-theme='dark'] {
+  .sms-glass-card {
+    background: rgba(30, 41, 59, 0.8);
+  }
+
+  .sms-page-subtitle {
+    color: #94a3b8;
+  }
+
+  .sms-chart-card,
+  .sms-kpi-card,
+  .sms-users-table-card {
+    background: rgba(30, 41, 59, 0.6);
+  }
+}
+
+/* ── School Overview Dashboard ── */
+.sms-overview {
+  animation: sms-fade-up 0.4s ease-out;
+}
+
+.sms-overview-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: var(--sms-radius-lg);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(6, 182, 212, 0.06) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.sms-overview-greeting {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sms-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.25rem;
+}
+
+.sms-overview-title {
+  font-weight: 800;
+  font-size: 1.5rem;
+}
+
+.sms-overview-sub {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.sms-health-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sms-health-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: sms-pulse-glow 2s ease-in-out infinite;
+}
+
+.sms-filter-pills .btn {
+  border-radius: 999px !important;
+  padding: 0.35rem 1rem;
+}
+
+.sms-kpi-card {
+  border-radius: var(--sms-radius) !important;
+  overflow: hidden;
+  transition: transform 0.25s, box-shadow 0.25s;
+  color: white;
+}
+
+.sms-kpi-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--sms-shadow-lg);
+}
+
+.sms-kpi-purple { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+.sms-kpi-green { background: linear-gradient(135deg, #10b981, #059669); }
+.sms-kpi-orange { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+.sms-kpi-blue { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
+
+.sms-kpi-label {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.sms-kpi-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0.25rem 0;
+}
+
+.sms-kpi-sub {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.sms-kpi-trend {
+  font-size: 0.7rem !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  font-weight: 600;
+  padding: 0.35rem 0.65rem !important;
+}
+
+.sms-kpi-icon-wrap {
+  opacity: 0.35;
+  transform: scale(1.2);
+}
+
+.sms-chart-card {
+  border-radius: var(--sms-radius) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s;
+}
+
+.sms-chart-card:hover {
+  box-shadow: var(--sms-shadow);
+}
+
+.sms-chart-wrap {
+  height: 260px;
+  position: relative;
+}
+
+.sms-collection-ring {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.sms-collection-ring svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sms-collection-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sms-collection-pct {
+  font-size: 1.75rem;
+  font-weight: 800;
+  background: var(--sms-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sms-collection-sub {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.sms-ring-stat {
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.06);
+  text-align: center;
+}
+
+.sms-users-table-card {
+  border-radius: var(--sms-radius) !important;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.sms-users-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--sms-gradient);
+  color: white;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.sms-users-table .sms-user-row {
+  transition: background 0.15s;
+}
+
+.sms-users-table .sms-user-row:hover {
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.sms-user-avatar-table {
+  width: 44px !important;
+  height: 44px !important;
+  font-weight: 700;
+}
+
+.sms-metric-pill {
+  display: inline-block;
+  min-width: 2rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--sms-primary);
+  font-weight: 700;
+}
+
+.sms-progress-glow .progress-bar {
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.sms-action-btn {
+  border-radius: 10px !important;
+  transition: transform 0.15s;
+}
+
+.sms-action-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Action bar & section tabs */
+.sms-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--sms-radius);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 1rem;
+}
+
+.sms-action-bar .btn {
+  border-radius: 12px !important;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.sms-action-bar .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.sms-section-tabs {
+  border: none !important;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem !important;
+}
+
+.sms-section-tabs .nav-link {
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 0.65rem 1.25rem !important;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.sms-section-tabs .nav-link.active {
+  background: var(--sms-gradient) !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+}
+
+.sms-section-tabs .nav-link:not(.active):hover {
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--sms-primary);
+}
+
+[data-coreui-theme='dark'] {
+  .sms-overview-hero {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+  }
+
+  .sms-action-bar {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .sms-health-pill {
+    background: rgba(30, 41, 59, 0.8);
+  }
+
+  .sms-payment-card,
+  .sms-balance-card,
+  .sms-audit-stat {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .sms-header-bar {
+    background: rgba(15, 23, 42, 0.95);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .sms-header-mobile-nav {
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .sms-header-mobile-pill {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .sms-header-mobile-pill.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(6, 182, 212, 0.2));
+    color: #c7d2fe;
+  }
+
+  .sms-breadcrumb-bar {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .sms-header-page-title {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .sms-analytics-kpi {
+    background: rgba(30, 41, 59, 0.8);
+  }
+
+  .sms-footer-inner {
+    background: linear-gradient(
+      180deg,
+      rgba(15, 23, 42, 0.95) 0%,
+      rgba(2, 6, 23, 0.98) 100%
+    );
+    border-top-color: rgba(99, 102, 241, 0.28);
+  }
+}
+
+/* ── Smart Pagination ── */
+.sms-pagination-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.sms-pagination-info {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.sms-pagination .page-item .page-link {
+  border-radius: 10px !important;
+  margin: 0 2px;
+  border: none;
+  font-weight: 600;
+  min-width: 38px;
+  text-align: center;
+  transition: all 0.15s;
+}
+
+.sms-pagination .page-item.active .page-link {
+  background: var(--sms-gradient) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+.sms-page-btn .page-link {
+  padding: 0.4rem 0.85rem !important;
+}
+
+.sms-page-ellipsis .page-link {
+  background: transparent !important;
+}
+
+/* ── Payment Audit Modal ── */
+.sms-audit-modal .modal-content {
+  border-radius: var(--sms-radius-lg);
+  border: none;
+  overflow: hidden;
+}
+
+.sms-modal-header {
+  background: var(--sms-gradient);
+  color: white;
+  border: none;
+}
+
+.sms-modal-header .btn-close {
+  filter: invert(1);
+}
+
+.sms-modal-body {
+  padding: 1.5rem;
+}
+
+.sms-modal-footer {
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.sms-audit-tabs .nav-link {
+  border-radius: 12px !important;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem !important;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.sms-audit-tabs .nav-link.active {
+  background: var(--sms-gradient) !important;
+  color: white !important;
+}
+
+.sms-audit-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.sms-audit-stat {
+  padding: 1rem;
+  border-radius: 14px;
+  text-align: center;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sms-audit-stat-val {
+  display: block;
+  font-weight: 800;
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.sms-audit-stat-lbl {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.85;
+  margin-top: 0.25rem;
+}
+
+.sms-audit-stat--blue { background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05)); color: #3b82f6; }
+.sms-audit-stat--green { background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); color: #10b981; }
+.sms-audit-stat--purple { background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.05)); color: #8b5cf6; }
+.sms-audit-stat--cyan { background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(6, 182, 212, 0.05)); color: #06b6d4; }
+.sms-audit-stat--orange { background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05)); color: #f59e0b; }
+.sms-audit-stat--red { background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05)); color: #ef4444; }
+
+.sms-payment-card {
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+}
+
+.sms-payment-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sms-shadow);
+}
+
+.sms-payment-card--initial { border-left: 4px solid #f59e0b; }
+.sms-payment-card--additional { border-left: 4px solid #10b981; }
+
+.sms-payment-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.sms-payment-student {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.sms-payment-date {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.sms-payment-amount {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: #10b981;
+}
+
+.sms-payment-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.sms-payment-balance-row {
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(148, 163, 184, 0.3);
+}
+
+.sms-payment-ref {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.35rem;
+}
+
+.sms-balance-card {
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+}
+
+.sms-balance-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sms-shadow);
+}
+
+.sms-balance-card--paid { border-top: 3px solid #10b981; }
+.sms-balance-card--partial { border-top: 3px solid #f59e0b; }
+.sms-balance-card--unpaid { border-top: 3px solid #ef4444; }
+
+.sms-balance-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sms-balance-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--sms-gradient);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.sms-balance-amounts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.sms-balance-lbl {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  margin-bottom: 0.15rem;
+}
+
+.sms-balance-val {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.sms-balance-progress .progress-bar {
+  border-radius: 999px;
+}
+
+/* ── Header / Sidebar / Footer ── */
+.sms-header {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 1030;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.sms-header--scrolled {
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12);
+}
+
+.sms-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.75rem;
+  padding: 0.35rem 0.75rem !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  overflow-x: clip;
+}
+
+.sms-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.sms-header-toggle {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px !important;
+  margin-inline-start: 0 !important;
+  transition: background 0.15s ease;
+}
+
+.sms-header-toggle:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.sms-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  padding: 0.25rem 0.35rem;
+  border-radius: 10px;
+}
+
+.sms-header-brand-text {
+  font-weight: 800;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sms-header-page-title {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--cui-body-color);
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+  padding-left: 0.25rem;
+  border-left: 2px solid rgba(99, 102, 241, 0.35);
+  margin-left: 0.15rem;
+}
+
+.sms-header-nav {
+  gap: 0.25rem;
+}
+
+.sms-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.sms-header-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  background: transparent;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  color: inherit;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.sms-header-icon-btn:hover,
+.sms-header-icon-btn:focus-visible {
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.sms-header-icon-btn:active {
+  transform: scale(0.96);
+}
+
+.sms-header-profile-toggle {
+  border-radius: 50% !important;
+  padding: 2px !important;
+}
+
+.sms-header-avatar {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.45);
+  transition: box-shadow 0.2s ease;
+}
+
+.sms-header-avatar--round,
+.sms-header-avatar--round .sms-header-avatar-img {
+  border-radius: 50% !important;
+  overflow: hidden;
+}
+
+.sms-header-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  aspect-ratio: 1;
+  display: block;
+}
+
+.sms-header-profile-toggle:hover .sms-header-avatar {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.65);
+}
+
+.sms-header-mobile-nav {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+.sms-header-mobile-nav-scroll {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.sms-header-mobile-nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.sms-header-mobile-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--cui-body-color);
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.sms-header-mobile-pill:hover {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--sms-primary, #6366f1);
+}
+
+.sms-header-mobile-pill.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(6, 182, 212, 0.15));
+  border-color: rgba(99, 102, 241, 0.35);
+  color: var(--sms-primary, #6366f1);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
+}
+
+.sms-header-profile-dropdown {
+  position: relative;
+}
+
+.sms-header-profile-menu {
+  min-width: 220px;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.15) !important;
+  z-index: 1050;
+}
+
+/* Popper fixed positioning — menu grows left from the right-side avatar */
+.sms-header-profile-menu[data-popper-placement^='bottom-end'],
+.sms-header-profile-menu[data-popper-placement^='top-end'] {
+  inset-inline-end: 0;
+  inset-inline-start: auto;
+}
+
+.sms-header-profile-menu .dropdown-item {
+  padding: 0.55rem 1rem !important;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.sms-header-profile-menu .dropdown-item:first-of-type {
+  margin-top: 0;
+}
+
+.sms-header-profile-head {
+  padding: 0.85rem 1rem 0.65rem;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  margin-bottom: 0;
+}
+
+.sms-header-photo-edit {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--cui-body-bg);
+  border-radius: 50%;
+  background: var(--sms-primary, #6366f1);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sms-header-profile-name {
+  font-weight: 700;
+  margin-top: 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.sms-header-profile-email {
+  font-size: 0.75rem;
+  color: var(--cui-secondary-color);
+  word-break: break-all;
+  margin-bottom: 0;
+  line-height: 1.2;
+}
+
+.sms-notif-menu {
+  min-width: min(360px, calc(100vw - 1.5rem)) !important;
+  max-width: 360px;
+  border-radius: 16px !important;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.15) !important;
+}
+
+.sms-notif-menu-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.sms-notif-empty {
+  text-align: center;
+  color: var(--cui-secondary-color);
+  font-size: 0.875rem;
+  padding: 2rem 1rem;
+}
+
+.sms-notif-time {
+  font-size: 0.68rem;
+  color: var(--cui-secondary-color);
+  margin-top: 0.15rem;
+}
+
+.sms-theme-menu {
+  border-radius: 12px !important;
+  min-width: 140px;
+}
+
+.sms-app-content {
+  padding-top: 1rem !important;
+  padding-bottom: 2rem !important;
+  max-width: 100%;
+}
+
+.sms-breadcrumb-bar {
+  padding: 0.45rem 1rem 0.65rem !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(248, 250, 252, 0.5);
+}
+
+.sms-header-link {
+  font-weight: 600 !important;
+  border-radius: 10px;
+  padding: 0.45rem 0.9rem !important;
+  display: inline-flex !important;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.sms-header-link:hover {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.sms-header-link.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(6, 182, 212, 0.12));
+  color: var(--sms-primary, #6366f1) !important;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+.sms-icon-btn {
+  border-radius: 10px !important;
+  padding: 0.35rem !important;
+  transition: background 0.15s;
+}
+
+.sms-icon-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.sms-sidebar-header {
+  padding: 1rem !important;
+}
+
+/* ── Ibratech Innovations logo ── */
+.sms-app-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.sms-app-logo--full {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.sms-app-logo-img {
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.sms-app-logo-img--full {
+  border-radius: 0;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 16px rgba(34, 211, 238, 0.15));
+}
+
+.sms-app-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.sms-app-logo-text--solo {
+  margin-top: 0.35rem;
+  text-align: center;
+}
+
+.sms-app-logo-name {
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #67e8f9, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+}
+
+.sms-app-logo-sub {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sms-auth-brand-logo.sms-app-logo--full {
+  width: 100%;
+  padding: 0 0.5rem;
+}
+
+.sms-auth-brand-logo .sms-app-logo-img--full {
+  max-width: min(220px, 90%);
+  filter: drop-shadow(0 10px 28px rgba(34, 211, 238, 0.25));
+}
+
+.sms-landing-brand-logo .sms-app-logo-name {
+  background: linear-gradient(135deg, #c7d2fe, #67e8f9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sms-landing-brand-logo .sms-app-logo-sub {
+  color: var(--lp-muted, #94a3b8);
+}
+
+.sms-landing-footer-tag {
+  color: var(--lp-muted, #94a3b8);
+  font-size: 0.85rem;
+}
+
+.sms-sidebar-brand {
+  padding: 0.25rem 0;
+}
+
+.sms-sidebar-brand .sidebar-brand-full.sms-app-logo--full {
+  width: 100%;
+  padding: 0.35rem 0.5rem 0;
+}
+
+.sms-sidebar-brand .sidebar-brand-full .sms-app-logo-img--full {
+  max-width: 148px;
+  width: 100%;
+  height: auto;
+}
+
+.sms-sidebar-brand .sidebar-brand-narrow .sms-app-logo-img {
+  width: 42px;
+  height: 42px;
+}
+
+.sms-header-brand .sms-app-logo-sub,
+[data-coreui-theme='light'] .sms-header-brand .sms-app-logo-sub {
+  color: #64748b;
+}
+
+.sms-footer-brand .sms-app-logo-img {
+  width: 40px;
+  height: 40px;
+}
+
+
+.sms-sidebar-title {
+  font-weight: 800;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #a5b4fc, #67e8f9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sidebar .nav-link {
+  border-radius: 10px;
+  margin: 2px 8px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.sidebar .nav-link.active {
+  background: rgba(99, 102, 241, 0.25) !important;
+  color: #c7d2fe !important;
+}
+
+.sidebar .nav-link:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sms-footer {
+  position: relative;
+  margin-top: auto;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent;
+}
+
+.sms-footer-inner {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  width: 100%;
+  padding: 0.9rem 1.25rem;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.88) 0%,
+    rgba(15, 23, 42, 0.96) 100%
+  );
+  border-top: 1px solid rgba(99, 102, 241, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.sms-footer-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--sms-gradient);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.sms-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.sms-footer-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(6, 182, 212, 0.15));
+  color: #a5b4fc;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.25);
+}
+
+.sms-footer-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.sms-footer-brand-name {
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
+  background: linear-gradient(135deg, #c7d2fe 0%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sms-footer-muted {
+  font-size: 0.78rem;
+  color: rgba(148, 163, 184, 0.9);
+  line-height: 1.3;
+}
+
+.sms-footer-powered {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+}
+
+.sms-footer-heart {
+  color: #f472b6;
+  filter: drop-shadow(0 0 6px rgba(244, 114, 182, 0.45));
+  animation: sms-footer-heartbeat 1.4s ease-in-out infinite;
+}
+
+@keyframes sms-footer-heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.18);
+  }
+  30% {
+    transform: scale(1);
+  }
+}
+
+.sms-footer-credit {
+  font-weight: 700;
+  color: rgba(226, 232, 240, 0.95);
+  text-decoration: none;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.sms-footer-credit:hover {
+  color: #a5b4fc;
+  text-shadow: 0 0 12px rgba(165, 180, 252, 0.45);
+}
+
+[data-coreui-theme='light'] .sms-footer-inner {
+  background: linear-gradient(
+    180deg,
+    rgba(248, 250, 252, 0.96) 0%,
+    rgba(241, 245, 249, 1) 100%
+  );
+  border-top-color: rgba(99, 102, 241, 0.12);
+  color: #334155;
+}
+
+[data-coreui-theme='light'] .sms-footer-brand-name {
+  background: linear-gradient(135deg, #4f46e5 0%, #0891b2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-coreui-theme='light'] .sms-footer-muted {
+  color: #64748b;
+}
+
+[data-coreui-theme='light'] .sms-footer-icon-wrap {
+  color: #6366f1;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08));
+}
+
+[data-coreui-theme='light'] .sms-footer-credit {
+  color: #1e293b;
+}
+
+[data-coreui-theme='light'] .sms-footer-credit:hover {
+  color: #6366f1;
+}
+
+@media (max-width: 576px) {
+  .sms-footer-inner {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem 0.85rem;
+  }
+
+  .sms-footer-brand {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .sms-footer-powered {
+    justify-content: center;
+  }
+}
+
+/* ── Analytics page ── */
+.sms-analytics-page {
+  animation: sms-fade-up 0.4s ease-out;
+}
+
+.sms-analytics-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: var(--sms-radius-lg);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(6, 182, 212, 0.06) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.sms-analytics-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.sms-analytics-kpi {
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.sms-analytics-kpi-val {
+  display: block;
+  font-weight: 800;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.sms-analytics-kpi-lbl {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-top: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sms-analytics-kpi--purple { background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), transparent); color: #6366f1; }
+.sms-analytics-kpi--blue { background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), transparent); color: #3b82f6; }
+.sms-analytics-kpi--green { background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), transparent); color: #10b981; }
+.sms-analytics-kpi--orange { background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), transparent); color: #f59e0b; }
+
+.sms-chart-card-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  font-weight: 600;
+}
+
+.sms-select,
+.sms-input-group {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Form modals */
+.modal-content {
+  border-radius: var(--sms-radius-lg) !important;
+  border: none;
+  overflow: hidden;
+}
+
+.modal-header:not(.sms-modal-header) {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(6, 182, 212, 0.05));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.modal-body .form-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.modal-body .form-control,
+.modal-body .form-select {
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 0.55rem 0.85rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  border-color: var(--sms-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.body.flex-grow-1 {
+  padding-top: 0.5rem;
+}
+
+/* ── Section guide banner ── */
+.sms-guide-banner {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem 1.25rem;
+  border-radius: var(--sms-radius-lg);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  animation: sms-fade-up 0.35s ease-out;
+}
+
+.sms-guide-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sms-gradient);
+  color: white;
+  flex-shrink: 0;
+}
+
+.sms-guide-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.35rem;
+}
+
+.sms-guide-steps {
+  padding-left: 1.15rem;
+  font-size: 0.85rem;
+  color: var(--cui-body-color-secondary, #64748b);
+}
+
+.sms-guide-steps li {
+  margin-bottom: 0.15rem;
+}
+
+[data-coreui-theme='dark'] .sms-guide-banner {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.08));
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+/* ── User stats modal mini cards ── */
+.sms-stat-mini {
+  padding: 1rem;
+  border-radius: 14px;
+  text-align: center;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  transition: transform 0.2s;
+}
+
+.sms-stat-mini:hover {
+  transform: translateY(-2px);
+}
+
+.sms-stat-mini-icon {
+  opacity: 0.7;
+  margin-bottom: 0.35rem;
+}
+
+.sms-stat-mini-val {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.sms-stat-mini-lbl {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+  margin-top: 0.2rem;
+}
+
+.sms-stat-mini--purple { border-color: rgba(139, 92, 246, 0.35); color: #a78bfa; }
+.sms-stat-mini--blue { border-color: rgba(59, 130, 246, 0.35); color: #60a5fa; }
+.sms-stat-mini--orange { border-color: rgba(245, 158, 11, 0.35); color: #fbbf24; }
+.sms-stat-mini--green { border-color: rgba(16, 185, 129, 0.35); color: #34d399; }
+
+.sms-finance-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.sms-finance-pill {
+  flex: 1;
+  min-width: 140px;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sms-finance-pill--block {
+  height: 100%;
+}
+
+.sms-finance-lbl {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.75;
+}
+
+.sms-finance-val {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.sms-finance-pill--orange .sms-finance-val { color: #fbbf24; }
+.sms-finance-pill--green .sms-finance-val { color: #34d399; }
+.sms-finance-pill--red .sms-finance-val { color: #f87171; }
+.sms-finance-pill--blue .sms-finance-val { color: #60a5fa; }
+
+.sms-info-panel {
+  padding: 1.25rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  height: 100%;
+}
+
+.sms-info-panel-title {
+  font-weight: 700;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+.sms-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  font-size: 0.9rem;
+}
+
+.sms-info-row:last-child {
+  border-bottom: none;
+}
+
+.sms-balance-progress {
+  height: 8px !important;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+/* ── Cohort cards grid ── */
+.sms-panel-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sms-cohort-card {
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  height: 100%;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  animation: sms-fade-up 0.4s ease-out;
+}
+
+.sms-cohort-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.sms-cohort-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.sms-cohort-name {
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.sms-cohort-desc {
+  font-size: 0.8rem;
+  opacity: 0.65;
+  margin-top: 0.2rem;
+}
+
+.sms-cohort-dates {
+  font-size: 0.82rem;
+  opacity: 0.8;
+}
+
+.sms-cohort-progress {
+  height: 6px !important;
+  border-radius: 99px;
+}
+
+.sms-cohort-metrics {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.sms-cohort-metric-val {
+  display: block;
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+.sms-cohort-metric-lbl {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.sms-cohort-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sms-btn-glow {
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+/* ── Cohort detail workspace ── */
+.sms-cohort-hero {
+  padding: 1.5rem;
+  border-radius: var(--sms-radius-lg);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(99, 102, 241, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.sms-back-btn {
+  color: var(--cui-primary) !important;
+  text-decoration: none !important;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.sms-cohort-hero-stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.sms-hero-stat {
+  text-align: center;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  min-width: 80px;
+}
+
+.sms-hero-stat-val {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.sms-hero-stat-lbl {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.sms-hero-stat--green { border-color: rgba(16, 185, 129, 0.35); }
+.sms-hero-stat--green .sms-hero-stat-val { color: #34d399; }
+.sms-hero-stat--orange { border-color: rgba(245, 158, 11, 0.35); }
+.sms-hero-stat--orange .sms-hero-stat-val { color: #fbbf24; }
+
+.sms-sub-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.sms-sub-tab {
+  border: none;
+  background: transparent;
+  padding: 0.55rem 1.1rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--cui-body-color-secondary, #64748b);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.sms-sub-tab:hover {
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--cui-body-color);
+}
+
+.sms-sub-tab.active {
+  background: var(--sms-gradient);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.sms-tab-content {
+  animation: sms-fade-up 0.3s ease-out;
+}
+
+.sms-quick-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Student cards ── */
+.sms-student-card {
+  padding: 1.15rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  height: 100%;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.sms-student-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.sms-student-card--paid {
+  border-left: 4px solid #10b981;
+}
+
+.sms-student-card--pending {
+  border-left: 4px solid #f59e0b;
+}
+
+.sms-student-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.sms-student-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.sms-student-meta {
+  font-size: 0.78rem;
+  opacity: 0.65;
+}
+
+.sms-student-course {
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-bottom: 0.75rem;
+}
+
+.sms-student-amounts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.65rem;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.sms-student-amounts .lbl {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.sms-student-amounts .val {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+/* ── Course cards ── */
+.sms-course-card {
+  padding: 1.15rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  height: 100%;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.sms-course-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.sms-course-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sms-course-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.sms-course-fee {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fbbf24;
+  margin-bottom: 0.5rem;
+}
+
+.sms-course-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-bottom: 0.75rem;
+}
+
+.sms-course-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* ── Payment list in cohort detail ── */
+.sms-payment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sms-payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  transition: background 0.15s;
+}
+
+.sms-payment-row:hover {
+  background: rgba(99, 102, 241, 0.06);
+}
+
+[data-coreui-theme='dark'] {
+  .sms-stat-mini,
+  .sms-finance-pill,
+  .sms-info-panel,
+  .sms-cohort-card,
+  .sms-student-card,
+  .sms-course-card,
+  .sms-payment-row,
+  .sms-hero-stat {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .sms-student-amounts {
+    background: rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* ── Settings & Profile pages ── */
+.sms-settings-page,
+.sms-profile-page {
+  animation: sms-fade-up 0.4s ease-out;
+  padding-bottom: 2rem;
+}
+
+.sms-page-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sms-settings-card {
+  padding: 1.35rem 1.5rem;
+  border-radius: var(--sms-radius-lg);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.sms-settings-card-title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.sms-settings-card-sub {
+  font-size: 0.85rem;
+  color: var(--cui-body-color-secondary, #64748b);
+  margin-bottom: 1.25rem;
+}
+
+.sms-setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.sms-setting-row:last-child {
+  border-bottom: none;
+}
+
+.sms-setting-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sms-setting-desc {
+  font-size: 0.78rem;
+  color: var(--cui-body-color-secondary, #64748b);
+  margin-top: 0.15rem;
+}
+
+.sms-setting-select {
+  max-width: 160px;
+  border-radius: 10px;
+}
+
+.sms-toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.sms-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sms-toggle-slider {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 99px;
+  transition: 0.25s;
+}
+
+.sms-toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.25s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sms-toggle input:checked + .sms-toggle-slider {
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+}
+
+.sms-toggle input:checked + .sms-toggle-slider::before {
+  transform: translateX(22px);
+}
+
+.sms-toggle input:disabled + .sms-toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sms-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.sms-theme-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem 1rem;
+  border-radius: 14px;
+  border: 2px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: inherit;
+}
+
+.sms-theme-option:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-2px);
+}
+
+.sms-theme-option.active {
+  border-color: #6366f1;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08));
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+}
+
+.sms-theme-option-desc {
+  font-size: 0.72rem;
+  opacity: 0.65;
+  margin-top: 0.25rem;
+  line-height: 1.3;
+}
+
+.sms-theme-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #6366f1;
+}
+
+.sms-settings-info .sms-info-row {
+  padding: 0.6rem 0;
+}
+
+.sms-profile-hero {
+  padding: 1.75rem;
+  border-radius: var(--sms-radius-lg);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.sms-profile-hero-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.sms-profile-avatar {
+  width: 96px !important;
+  height: 96px !important;
+}
+
+.sms-profile-avatar-wrap {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.sms-profile-edit-photo {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--cui-body-bg);
+  background: var(--sms-gradient, linear-gradient(135deg, #6366f1, #06b6d4));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.sms-profile-edit-photo:hover {
+  transform: scale(1.08);
+}
+
+.sms-profile-hero-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.sms-profile-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 576px) {
+  .sms-header-bar {
+    padding: 0.25rem 0.5rem !important;
+    min-height: 3.5rem;
+  }
+
+  .sms-header-page-title {
+    max-width: 100px;
+    font-size: 0.8125rem;
+  }
+
+  .sms-header-brand-text {
+    display: none;
+  }
+
+  .sms-header-icon-btn,
+  .sms-header-toggle {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .sms-app-content {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .sms-profile-hero-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .sms-profile-hero-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Notifications dropdown ── */
+.sms-notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sms-notif-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.sms-notif-item {
+  white-space: normal !important;
+  padding: 0.75rem 1rem !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.sms-notif-item.unread {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+/* ── Control Center ── */
+.sms-control-center {
+  animation: sms-fade-up 0.4s ease-out;
+}
+
+.sms-control-hero {
+  padding: 1.5rem 0 0.5rem;
+}
+
+.sms-control-action {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: var(--cui-body-bg);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+}
+
+.sms-control-action:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sms-shadow);
+}
+
+.sms-control-action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.sms-control-team-row,
+.sms-control-alert-row {
+  padding: 0.75rem 1rem;
+  border-radius: var(--sms-radius);
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.sms-pwa-banner {
+  border: none !important;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.12) 100%) !important;
+  border-radius: var(--sms-radius) !important;
+}
+
+[data-coreui-theme='dark'] .sms-control-action {
+  background: rgba(30, 41, 59, 0.6);
+}
+
+[data-coreui-theme='dark'] .sms-control-team-row,
+[data-coreui-theme='dark'] .sms-control-alert-row {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+/* ── Coordinator dashboard ── */
+.sms-coordinator-dashboard {
+  animation: sms-fade-up 0.4s ease-out;
+}
+
+.sms-stat-inline {
+  padding: 1rem;
+  border-radius: var(--sms-radius);
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.sms-stat-inline-val {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.sms-stat-inline-lbl {
+  font-size: 0.75rem;
+  color: var(--cui-secondary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sms-payments-table thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom-width: 1px;
+}
+
+/* ── Manage Users (modern table + cards) ── */
+.sms-manage-users {
+  .sms-kpi-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sms-manage-toolbar .sms-search-input {
+    background: var(--cui-body-bg, #fff);
+  }
+}
+
+.sms-toast-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sms-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: sms-fade-up 0.35s ease-out;
+}
+
+.sms-toast--success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #059669;
+}
+
+.sms-toast--error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+}
+
+.sms-toast-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.sms-toast-close:hover {
+  opacity: 1;
+}
+
+.sms-users-table-card {
+  border-radius: var(--sms-radius) !important;
+  overflow: hidden;
+  background: var(--cui-body-bg, #fff);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+}
+
+.sms-users-table {
+  --sms-table-border: rgba(148, 163, 184, 0.2);
+
+  thead {
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  thead th {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cui-secondary-color, #64748b);
+    border-bottom: 1px solid var(--sms-table-border);
+    padding: 1rem 1.25rem;
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--sms-table-border);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background: rgba(99, 102, 241, 0.04);
+  }
+}
+
+.sms-users-row--inactive {
+  opacity: 0.65;
+}
+
+.sms-user-avatar--sm {
+  width: 40px;
+  height: 40px;
+  font-size: 1rem;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.sms-role-pill,
+.sms-access-pill,
+.sms-status-pill {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.sms-role-pill--student { background: rgba(16, 185, 129, 0.15); color: #059669; }
+.sms-role-pill--teacher { background: rgba(6, 182, 212, 0.15); color: #0891b2; }
+.sms-role-pill--parent { background: rgba(100, 116, 139, 0.15); color: #475569; }
+.sms-role-pill--admin { background: rgba(245, 158, 11, 0.18); color: #d97706; }
+.sms-role-pill--superadmin { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+
+.sms-access-pill {
+  background: rgba(99, 102, 241, 0.1);
+  color: #4f46e5;
+}
+
+.sms-access-pill--full {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.sms-status-pill.is-active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.sms-status-pill.is-inactive {
+  background: rgba(100, 116, 139, 0.15);
+  color: #64748b;
+}
+
+.sms-status-pill.is-warning {
+  background: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+}
+
+.sms-status-pill.is-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+.sms-row-actions {
+  display: inline-flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.sms-action-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px !important;
+  border: 1px solid transparent !important;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.sms-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.sms-action-btn--edit {
+  background: rgba(99, 102, 241, 0.12) !important;
+  color: #4f46e5 !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+.sms-action-btn--view {
+  background: rgba(6, 182, 212, 0.12) !important;
+  color: #0891b2 !important;
+  border-color: rgba(6, 182, 212, 0.25) !important;
+}
+
+.sms-action-btn--delete {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #dc2626 !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+.sms-you-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6366f1;
+  padding: 0.2rem 0.5rem;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 8px;
+}
+
+.sms-view-toggle .btn {
+  border-radius: 10px !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+}
+
+.sms-user-modal .modal-content {
+  border-radius: var(--sms-radius-lg);
+  border: none;
+  overflow: hidden;
+  box-shadow: var(--sms-shadow-lg);
+}
+
+.sms-user-modal-header {
+  background: var(--sms-gradient);
+  color: white;
+  border-bottom: none;
+}
+
+.sms-user-modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.sms-user-modal-body {
+  padding: 1.5rem;
+}
+
+.sms-user-modal-footer {
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 1rem 1.5rem;
+}
+
+[data-coreui-theme='dark'] {
+  .sms-users-table-card {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .sms-users-table thead {
+    background: rgba(99, 102, 241, 0.12);
+  }
+
+  .sms-toast--success {
+    color: #34d399;
+  }
+
+  .sms-toast--error {
+    color: #f87171;
+  }
+
+  .sms-glass-card {
+    background: rgba(30, 41, 59, 0.85);
+  }
+}
+
+/* ── School site builder & public pages ── */
+.sms-site-builder {
+  animation: sms-fade-up 0.35s ease-out;
+}
+
+.sms-site-builder-list-item {
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.sms-site-preview-wrap {
+  position: sticky;
+  top: 5rem;
+}
+
+.sms-site-preview-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.sms-site-preview-frame {
+  border-radius: var(--sms-radius-lg);
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: var(--sms-shadow-lg);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.sms-site-loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.sms-site-error-page {
+  background: #0f172a;
+  min-height: 100vh;
+}
+
+.sms-site-error-alert {
+  max-width: 520px;
+  width: 100%;
+}
+
+.sms-site-draft-banner {
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+  padding: 0.65rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  color: #1e293b;
+}
+
+.sms-site-draft-banner a {
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+.sms-school-site {
+  --site-accent: #6366f1;
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+.sms-school-site--preview {
+  min-height: auto;
+  font-size: 0.9rem;
+}
+
+.sms-site-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+.sms-site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sms-site-nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sms-site-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.sms-site-brand-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--site-accent), #06b6d4);
+  color: white;
+}
+
+.sms-site-brand-name {
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.sms-site-brand-tag {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.sms-site-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sms-site-nav-link {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.sms-site-nav-link:hover {
+  color: white;
+}
+
+.sms-site-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--site-accent), #8b5cf6);
+  color: white !important;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-decoration: none;
+  border: none;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.sms-site-cta-btn:hover {
+  transform: translateY(-2px);
+  color: white;
+}
+
+.sms-site-cta-btn--lg {
+  padding: 0.65rem 1.35rem;
+  font-size: 0.95rem;
+  margin-top: 1rem;
+}
+
+.sms-site-cta-btn--outline {
+  background: transparent;
+  border: 2px solid var(--site-accent);
+  box-shadow: none;
+}
+
+.sms-site-hero {
+  padding: 2.5rem 1.25rem 3rem;
+  background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.2), transparent 55%);
+}
+
+.sms-site-hero-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.sms-site-hero-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+
+.sms-site-hero h1 {
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+}
+
+.sms-site-hero p {
+  color: #94a3b8;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.sms-site-hero-visual {
+  border-radius: 20px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sms-site-hero-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sms-site-hero-visual--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--site-accent);
+  opacity: 0.5;
+}
+
+.sms-site-features {
+  padding: 2rem 0;
+}
+
+.sms-site-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.sms-site-feature-card {
+  padding: 1.25rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sms-site-feature-icon {
+  color: var(--site-accent);
+  margin-bottom: 0.5rem;
+}
+
+.sms-site-feature-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.sms-site-feature-card p {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.sms-site-about {
+  padding: 3rem 0;
+}
+
+.sms-site-about-inner {
+  max-width: 720px;
+}
+
+.sms-site-about h2,
+.sms-site-section-title {
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.sms-site-about p {
+  color: #94a3b8;
+  line-height: 1.7;
+  font-size: 1.05rem;
+}
+
+.sms-site-programs {
+  padding: 2rem 0 3rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.sms-site-programs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.sms-site-program-card {
+  padding: 1.35rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--site-accent);
+}
+
+.sms-site-program-card h3 {
+  color: #f1f5f9;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.sms-site-program-card p {
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.sms-site-program-fee {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-weight: 700;
+  color: #34d399;
+  font-size: 0.875rem;
+}
+
+.sms-site-contact {
+  padding: 3rem 0;
+}
+
+.sms-site-contact-inner {
+  text-align: center;
+}
+
+.sms-site-contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 1.25rem 0 1.5rem;
+  align-items: center;
+}
+
+.sms-site-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.sms-site-footer {
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #64748b;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 768px) {
+  .sms-site-hero-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .sms-site-nav-actions {
+    display: none;
+  }
+
+  .sms-site-preview-wrap {
+    position: static;
+  }
+}
+
+/* ── Login activity logs ── */
+.sms-login-log-card {
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sms-login-logs-table thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cui-body-color-secondary, #64748b);
+  border-bottom-width: 1px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Mobile app shell — safe areas, bottom tabs, compact layout
+   ══════════════════════════════════════════════════════════════ */
+
+.sms-app-shell {
+  min-height: 100dvh;
+}
+
+.sms-app-shell .wrapper {
+  min-height: 100dvh;
+}
+
+.sms-app-body {
+  overflow-x: clip;
+}
+
+@media (max-width: 991.98px) {
+  .sms-app-shell .sms-header {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  .sms-header-bar {
+    min-height: 3rem !important;
+    padding: 0.2rem 0.5rem !important;
+    padding-left: max(0.5rem, env(safe-area-inset-left, 0)) !important;
+    padding-right: max(0.5rem, env(safe-area-inset-right, 0)) !important;
+  }
+
+  .sms-header-left {
+    gap: 0.15rem;
+  }
+
+  .sms-header-actions {
+    gap: 0;
+  }
+
+  .sms-header-icon-btn,
+  .sms-header-toggle {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 10px !important;
+  }
+
+  .sms-header-avatar {
+    width: 2rem !important;
+    height: 2rem !important;
+    font-size: 0.75rem;
+  }
+
+  .sms-app-content {
+    padding-top: 0.65rem !important;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0)) !important;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0)) !important;
+  }
+
+  .sms-control-hero {
+    padding: 0.5rem 0 0.25rem;
+  }
+
+  .sms-control-hero h2 {
+    font-size: 1.35rem;
+  }
+
+  .sms-control-hero p {
+    font-size: 0.875rem;
+  }
+
+  .sms-stat-card .card-body {
+    padding: 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .sms-stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .sms-stat-value {
+    font-size: 1.25rem;
+  }
+
+  .sms-stat-label {
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+
+  .sms-control-action .card-body {
+    padding: 1rem !important;
+  }
+
+  .sms-control-action-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sms-page-hero h2 {
+    font-size: 1.35rem;
+  }
+}
+
+/* Bottom tab bar — native mobile app navigation */
+.sms-mobile-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1040;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: 0.15rem;
+  padding: 0.35rem 0.25rem;
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0));
+  padding-left: max(0.25rem, env(safe-area-inset-left, 0));
+  padding-right: max(0.25rem, env(safe-area-inset-right, 0));
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.08);
+}
+
+.sms-mobile-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+  max-width: 5.5rem;
+  padding: 0.35rem 0.2rem;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  color: #64748b;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  transition: color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sms-mobile-tab span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.sms-mobile-tab.active {
+  color: var(--sms-primary, #6366f1);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.sms-mobile-tab:active {
+  transform: scale(0.96);
+}
+
+[data-coreui-theme='dark'] .sms-mobile-tabbar {
+  background: rgba(15, 23, 42, 0.95);
+  border-top-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
+}
+
+[data-coreui-theme='dark'] .sms-mobile-tab {
+  color: #94a3b8;
+}
+
+[data-coreui-theme='dark'] .sms-mobile-tab.active {
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.2);
+}

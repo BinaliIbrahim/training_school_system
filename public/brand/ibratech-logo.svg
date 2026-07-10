@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Ibratech Innovations SMS Pro">
+  <defs>
+    <linearGradient id="ib" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#67e8f9"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="#0a0a0a"/>
+  <circle cx="200" cy="155" r="95" fill="#1c1410"/>
+  <g transform="translate(200 155)" fill="url(#ib)">
+    <rect x="-38" y="-32" width="12" height="44" rx="2"/>
+    <rect x="-20" y="-40" width="12" height="52" rx="2"/>
+    <rect x="-2" y="-48" width="12" height="60" rx="2"/>
+    <path d="M16 -52c34 0 54 24 54 52s-20 52-54 52V-52z"/>
+    <path d="M-44 8c14-18 32-26 56-26 8 0 16 2 24 4-12 16-28 24-48 24h-32z"/>
+    <path d="M-48 -4c-4 14-4 30 0 44 12-16 28-24 48-24 4 0 8 0 12 2-16-20-34-28-60-22z"/>
+  </g>
+  <g transform="translate(200 155)" fill="none" stroke="url(#ib)" stroke-width="3.5" stroke-linecap="round">
+    <path d="M-38 52c18 16 40 20 62 8"/>
+    <path d="M38 52c-18 16-40 20-62 8"/>
+  </g>
+  <text x="200" y="295" text-anchor="middle" fill="url(#ib)" font-family="Segoe UI, Arial, sans-serif" font-size="42" font-weight="700" letter-spacing="6">IBRATECH</text>
+  <text x="200" y="330" text-anchor="middle" fill="url(#ib)" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" letter-spacing="10" opacity=".9">INNOVATIONS</text>
+</svg>

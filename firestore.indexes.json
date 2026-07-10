@@ -1,0 +1,20 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "loginLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scopeAdminId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "loginLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

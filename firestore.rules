@@ -1,0 +1,233 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function myUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function myProfile() {
+      return myUserDoc().data;
+    }
+
+    function hasProfile() {
+      return myUserDoc().data != null;
+    }
+
+    function isSuperAdmin() {
+      return hasProfile() && myProfile().role == 'super-admin';
+    }
+
+    function isAdmin() {
+      return hasProfile() && myProfile().role == 'admin';
+    }
+
+    function isApproved() {
+      return hasProfile() && (
+        myProfile().role == 'super-admin'
+        || !('approvalStatus' in myProfile())
+        || myProfile().approvalStatus == null
+        || myProfile().approvalStatus == ''
+        || myProfile().approvalStatus == 'approved'
+      );
+    }
+
+    function isFullAccessRole() {
+      return isSuperAdmin() || isAdmin();
+    }
+
+    function legacyCanWrite() {
+      return hasProfile() && myProfile().canWrite == true;
+    }
+
+    function explicitCreate() {
+      return hasProfile() && (
+        (myProfile().permissions != null && myProfile().permissions.create == true)
+        || myProfile().canWrite == true
+      );
+    }
+
+    function explicitEdit() {
+      return hasProfile() && (
+        (myProfile().permissions != null && myProfile().permissions.edit == true)
+        || myProfile().canWrite == true
+      );
+    }
+
+    function explicitDelete() {
+      return hasProfile() && (
+        (myProfile().permissions != null && myProfile().permissions.delete == true)
+        || myProfile().canWrite == true
+      );
+    }
+
+    function managesUser(userId) {
+      return isAdmin()
+        && myProfile().managedUserIds != null
+        && userId in myProfile().managedUserIds;
+    }
+
+    // Admin/super-admin always; everyone else needs explicit permissions (set by admin/super-admin)
+    function permCreateFor(userId) {
+      return isFullAccessRole()
+        || legacyCanWrite()
+        || explicitCreate();
+    }
+
+    function permEditFor(userId) {
+      return isFullAccessRole()
+        || legacyCanWrite()
+        || explicitEdit();
+    }
+
+    function permDeleteFor(userId) {
+      return isFullAccessRole()
+        || legacyCanWrite()
+        || explicitDelete();
+    }
+
+    function canReadUser(userId) {
+      return isSelf(userId) || isSuperAdmin() || managesUser(userId);
+    }
+
+    function canAccessUserData(userId) {
+      return isApproved() && (isSelf(userId) || isSuperAdmin() || managesUser(userId));
+    }
+
+    // Sync legacy canWrite when permissions.create was set but canWrite was cleared
+    function isCanWriteSync() {
+      return isSelf(userId)
+        && resource.data.permissions != null
+        && resource.data.permissions.create == true
+        && resource.data.canWrite != true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['canWrite'])
+        && request.resource.data.canWrite == true;
+    }
+
+    // One-time bootstrap: legacy accounts missing permissions get defaults on first login
+    function isPermissionsBootstrap() {
+      return isSelf(userId)
+        && !('permissions' in resource.data)
+        && request.resource.data.permissions != null
+        && request.resource.data.permissions.create == true
+        && request.resource.data.permissions.edit == true
+        && request.resource.data.permissions.delete == true
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['permissions', 'canWrite']);
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Login audit trail — users write their own sign-in; admins see their team; super-admin sees all
+    match /loginLogs/{logId} {
+      allow read: if isSuperAdmin()
+        || (isAdmin() && resource.data.scopeAdminId == request.auth.uid);
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.event == 'login'
+        && request.resource.data.success == true;
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // Public school landing pages (admin-built, Firestore-only)
+    match /publicSites/{slug} {
+      allow read: if resource.data.published == true
+        || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isFullAccessRole()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isSignedIn()
+        && (
+          (isFullAccessRole() && resource.data.ownerId == request.auth.uid)
+          || isSuperAdmin()
+        );
+      allow delete: if isSignedIn()
+        && (resource.data.ownerId == request.auth.uid || isSuperAdmin());
+    }
+
+    match /users/{userId} {
+      // Profile photo stored as base64 data URL directly on the user document
+      function isProfilePhotoUpdate() {
+        return isSelf(userId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['photoURL', 'photoUpdatedAt', 'profileComplete'])
+          && (
+            !('photoURL' in request.resource.data)
+            || request.resource.data.photoURL == null
+            || (
+              request.resource.data.photoURL is string
+              && request.resource.data.photoURL.size() <= 900000
+            )
+          );
+      }
+
+      allow read: if canReadUser(userId);
+      allow create: if isSignedIn() && isSelf(userId);
+      allow delete: if isSuperAdmin();
+
+      allow update: if isSuperAdmin()
+        || isPermissionsBootstrap()
+        || isCanWriteSync()
+        || isProfilePhotoUpdate()
+        || (isSelf(userId) && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['role', 'approvalStatus', 'approvedBy', 'permissions', 'canWrite', 'managedUserIds', 'managedBy']))
+        || (isAdmin() && managesUser(userId)
+            && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['role', 'subscriptionenddate', 'subscriptionstartdate', 'approvalStatus', 'managedUserIds']));
+
+      match /notifications/{notificationId} {
+        allow read: if isSelf(userId);
+        allow write: if false;
+      }
+
+      match /students/{docId} {
+        allow read: if canReadUser(userId);
+        allow create: if canAccessUserData(userId) && permCreateFor(userId);
+        allow update: if canAccessUserData(userId) && permEditFor(userId);
+        allow delete: if canAccessUserData(userId) && permDeleteFor(userId);
+      }
+      match /courses/{docId} {
+        allow read: if canReadUser(userId);
+        allow create: if canAccessUserData(userId) && permCreateFor(userId);
+        allow update: if canAccessUserData(userId) && permEditFor(userId);
+        allow delete: if canAccessUserData(userId) && permDeleteFor(userId);
+      }
+      match /cohorts/{docId} {
+        allow read: if canReadUser(userId);
+        allow create: if canAccessUserData(userId) && permCreateFor(userId);
+        allow update: if canAccessUserData(userId) && permEditFor(userId);
+        allow delete: if canAccessUserData(userId) && permDeleteFor(userId);
+      }
+      match /payments/{docId} {
+        allow read: if canReadUser(userId);
+        allow create: if canAccessUserData(userId) && permCreateFor(userId);
+        allow update: if canAccessUserData(userId) && permEditFor(userId);
+        allow delete: if canAccessUserData(userId) && permDeleteFor(userId);
+      }
+      match /subscriptions/{docId} {
+        allow read: if isSelf(userId) || isSuperAdmin();
+        allow write: if false;
+      }
+      match /Payments/{docId} {
+        allow read: if isSelf(userId) || isSuperAdmin();
+        allow write: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read: if isSuperAdmin();
+    }
+  }
+}

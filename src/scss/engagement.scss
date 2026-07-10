@@ -1,0 +1,272 @@
+/* ── Engagement & delight layer ── */
+
+@keyframes sms-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sms-sparkle {
+  0% { opacity: 1; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+  100% { opacity: 0; transform: scale(0.5) rotate(360deg); }
+}
+
+@keyframes sms-welcome-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sms-momentum-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
+  50% { box-shadow: 0 0 20px 4px rgba(99, 102, 241, 0.15); }
+}
+
+@keyframes sms-num-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.sms-toast-portal {
+  position: fixed;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  top: max(1rem, env(safe-area-inset-top, 0));
+  right: max(1rem, env(safe-area-inset-right, 0));
+  max-width: min(360px, calc(100vw - 2rem));
+}
+
+@media (max-width: 991.98px) {
+  .sms-toast-portal {
+    top: auto;
+    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0));
+    left: max(0.75rem, env(safe-area-inset-left, 0));
+    right: max(0.75rem, env(safe-area-inset-right, 0));
+    max-width: none;
+  }
+}
+
+.sms-toast-float {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  pointer-events: auto;
+  animation: sms-toast-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sms-toast-float--success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.9));
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sms-toast-float--error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.92), rgba(220, 38, 38, 0.88));
+  color: white;
+}
+
+.sms-toast-float--warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.9));
+  color: #1e293b;
+}
+
+.sms-toast-float--info {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.92), rgba(79, 70, 229, 0.88));
+  color: white;
+}
+
+.sms-toast-float--celebrate {
+  animation: sms-toast-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), sms-momentum-glow 1.2s ease 0.2s;
+}
+
+.sms-toast-float-icon {
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+
+.sms-toast-float-msg {
+  flex: 1;
+  line-height: 1.35;
+}
+
+.sms-toast-float-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: inherit;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sms-toast-sparkles::before,
+.sms-toast-sparkles::after {
+  content: '✦';
+  position: absolute;
+  font-size: 0.75rem;
+  animation: sms-sparkle 0.8s ease-out forwards;
+  pointer-events: none;
+}
+
+.sms-toast-sparkles::before {
+  top: -4px;
+  right: 12px;
+  color: #fbbf24;
+}
+
+.sms-toast-sparkles::after {
+  top: 8px;
+  right: 28px;
+  color: #f472b6;
+  animation-delay: 0.15s;
+}
+
+.sms-welcome-pulse {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.15rem;
+  margin-bottom: 1rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  animation: sms-welcome-in 0.5s ease-out;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.sms-welcome-pulse-icon {
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.sms-momentum--card {
+  padding: 1.1rem 1.25rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  margin-bottom: 1.25rem;
+  animation: sms-fade-up 0.45s ease-out;
+}
+
+.sms-momentum-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.sms-momentum-fire {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #6366f1;
+}
+
+.sms-momentum-streak-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sms-momentum-streak-lbl {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.sms-momentum-today {
+  font-size: 0.85rem;
+}
+
+.sms-momentum-bar .progress-bar {
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.sms-momentum-msg {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.sms-momentum--compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+}
+
+.sms-momentum-bolt {
+  color: #f59e0b;
+}
+
+.sms-momentum-dot {
+  opacity: 0.4;
+}
+
+.sms-animated-num {
+  display: inline-block;
+  animation: sms-num-pop 0.5s ease-out;
+}
+
+/* Satisfying interactions app-wide */
+.sms-btn-glow:active,
+.sms-control-action:active,
+.sms-stat-card:active,
+.sms-student-card:active {
+  transform: scale(0.98);
+}
+
+.sms-stat-card,
+.sms-control-action,
+.sms-glass-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sms-app-body .btn-primary:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+[data-coreui-theme='dark'] .sms-momentum--card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.08));
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+[data-coreui-theme='dark'] .sms-momentum-msg {
+  color: #94a3b8;
+}

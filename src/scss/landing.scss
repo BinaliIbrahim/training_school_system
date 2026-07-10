@@ -1,0 +1,900 @@
+/* SMS Pro — Public landing page */
+.sms-landing {
+  --lp-bg: #070b14;
+  --lp-surface: rgba(15, 23, 42, 0.75);
+  --lp-border: rgba(148, 163, 184, 0.12);
+  --lp-text: #e2e8f0;
+  --lp-muted: #94a3b8;
+  background: var(--lp-bg);
+  color: var(--lp-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sms-landing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(7, 11, 20, 0.85);
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.sms-landing-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sms-landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sms-landing-brand-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  color: white;
+}
+
+.sms-landing-brand-name {
+  font-weight: 800;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #c7d2fe, #67e8f9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.sms-landing-brand-sub {
+  font-size: 0.72rem;
+  color: var(--lp-muted);
+}
+
+.sms-landing-nav-links {
+  display: none;
+  align-items: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 992px) {
+  .sms-landing-nav-links {
+    display: flex;
+  }
+}
+
+.sms-landing-nav-link {
+  background: none;
+  border: none;
+  color: var(--lp-muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.sms-landing-nav-link:hover {
+  color: white;
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.sms-landing-nav-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sms-landing-menu-btn {
+  display: flex;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--lp-border);
+  color: white;
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+
+@media (min-width: 992px) {
+  .sms-landing-menu-btn {
+    display: none;
+  }
+}
+
+.sms-landing-mobile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid var(--lp-border);
+  background: rgba(7, 11, 20, 0.98);
+}
+
+.sms-landing-mobile-nav .sms-landing-nav-link {
+  text-align: left;
+  width: 100%;
+}
+
+.sms-landing-hero {
+  position: relative;
+  padding: 3rem 1.25rem 4rem;
+  overflow: hidden;
+}
+
+.sms-landing-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(99, 102, 241, 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 80% 30%, rgba(6, 182, 212, 0.2), transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(139, 92, 246, 0.15), transparent 50%);
+  pointer-events: none;
+}
+
+.sms-landing-hero-inner {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+@media (min-width: 992px) {
+  .sms-landing-hero-inner {
+    grid-template-columns: 1fr 1fr;
+    padding-top: 1rem;
+  }
+}
+
+.sms-landing-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 1rem;
+}
+
+.sms-landing-hero h1 {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1.12;
+  margin-bottom: 1rem;
+}
+
+.sms-landing-hero h1 span {
+  background: linear-gradient(135deg, #fbbf24, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sms-landing-hero-lead {
+  font-size: 1.1rem;
+  line-height: 1.65;
+  color: var(--lp-muted);
+  margin-bottom: 1.5rem;
+  max-width: 540px;
+}
+
+.sms-landing-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.sms-landing-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white !important;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.sms-landing-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.5);
+  color: white;
+}
+
+.sms-landing-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.35rem;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white !important;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sms-landing-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.sms-landing-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  max-width: 420px;
+}
+
+.sms-landing-stat {
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--lp-border);
+}
+
+.sms-landing-stat-val {
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #fbbf24;
+  line-height: 1.2;
+}
+
+.sms-landing-stat-lbl {
+  font-size: 0.7rem;
+  color: var(--lp-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sms-landing-preview {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+}
+
+.sms-landing-preview-bar {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.65rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.sms-landing-preview-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.sms-landing-preview-dot:nth-child(1) { background: #ef4444; }
+.sms-landing-preview-dot:nth-child(2) { background: #fbbf24; }
+.sms-landing-preview-dot:nth-child(3) { background: #22c55e; }
+
+.sms-landing-preview-body {
+  padding: 1.25rem;
+}
+
+.sms-landing-preview-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.sms-landing-preview-kpi {
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.sms-landing-preview-kpi span {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--lp-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sms-landing-preview-kpi strong {
+  font-size: 1.1rem;
+  color: #a5b4fc;
+}
+
+.sms-landing-preview-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sms-landing-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8rem;
+}
+
+.sms-landing-preview-row .paid {
+  color: #34d399;
+  font-weight: 700;
+}
+
+.sms-landing-section {
+  padding: 4rem 1.25rem;
+}
+
+.sms-landing-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.sms-landing-section-head {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 2.5rem;
+}
+
+.sms-landing-section-head h2 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+}
+
+.sms-landing-section-head p {
+  color: var(--lp-muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.sms-landing-pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.sms-landing-pillar {
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-border);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.sms-landing-pillar:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.sms-landing-pillar-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.sms-landing-pillar-icon--purple {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.sms-landing-pillar-icon--cyan {
+  background: rgba(6, 182, 212, 0.2);
+  color: #67e8f9;
+}
+
+.sms-landing-pillar-icon--green {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.sms-landing-pillar h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.sms-landing-pillar p {
+  font-size: 0.9rem;
+  color: var(--lp-muted);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.sms-landing-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.sms-landing-step {
+  text-align: center;
+  padding: 1.5rem 1rem;
+}
+
+.sms-landing-step-num {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  color: white;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1rem;
+}
+
+.sms-landing-step h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.sms-landing-step p {
+  font-size: 0.875rem;
+  color: var(--lp-muted);
+  margin: 0;
+}
+
+.sms-landing-features {
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--lp-border);
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.sms-landing-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.sms-landing-feature {
+  padding: 1.35rem;
+  border-radius: 16px;
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-border);
+  transition: all 0.2s ease;
+}
+
+.sms-landing-feature:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.12);
+  transform: translateY(-3px);
+}
+
+.sms-landing-feature-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.sms-landing-feature-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sms-landing-feature h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.sms-landing-feature p {
+  font-size: 0.875rem;
+  color: var(--lp-muted);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.sms-landing-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.sms-landing-price-card {
+  padding: 1.75rem;
+  border-radius: 20px;
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-border);
+  text-align: center;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.sms-landing-price-card--featured {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: linear-gradient(145deg, rgba(99, 102, 241, 0.12), rgba(15, 23, 42, 0.9));
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
+}
+
+.sms-landing-price-card:hover {
+  transform: translateY(-4px);
+}
+
+.sms-landing-price-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a5b4fc;
+  margin-bottom: 0.5rem;
+}
+
+.sms-landing-price-amount {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+
+.sms-landing-price-amount small {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--lp-muted);
+}
+
+.sms-landing-price-desc {
+  font-size: 0.875rem;
+  color: var(--lp-muted);
+  margin-bottom: 1.25rem;
+}
+
+.sms-landing-price-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--lp-muted);
+}
+
+.sms-landing-price-list li {
+  padding: 0.35rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sms-landing-audience {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.sms-landing-audience-card {
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid var(--lp-border);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(6, 182, 212, 0.05));
+}
+
+.sms-landing-audience-card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.sms-landing-audience-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--lp-muted);
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.sms-landing-testimonials {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.sms-landing-testimonial {
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-border);
+}
+
+.sms-landing-testimonial-stars {
+  color: #fbbf24;
+  margin-bottom: 0.75rem;
+}
+
+.sms-landing-testimonial q {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--lp-muted);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.sms-landing-testimonial-author {
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.sms-landing-testimonial-role {
+  font-size: 0.75rem;
+  color: var(--lp-muted);
+}
+
+.sms-landing-cta {
+  text-align: center;
+  padding: 4rem 1.25rem;
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 100%, rgba(99, 102, 241, 0.25), transparent),
+    linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.08));
+  border-top: 1px solid var(--lp-border);
+}
+
+.sms-landing-cta h2 {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+}
+
+.sms-landing-cta p {
+  color: var(--lp-muted);
+  max-width: 520px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.6;
+}
+
+.sms-landing-cta-note {
+  font-size: 0.8rem;
+  color: var(--lp-muted);
+  margin-top: 1rem;
+}
+
+.sms-landing-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 992px) {
+  .sms-landing-contact-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.sms-landing-contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.sms-landing-contact-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  flex-shrink: 0;
+}
+
+.sms-landing-contact-form {
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-border);
+}
+
+.sms-landing-contact-form input,
+.sms-landing-contact-form textarea {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border-color: var(--lp-border) !important;
+  color: var(--lp-text) !important;
+  border-radius: 10px !important;
+}
+
+.sms-landing-footer {
+  padding: 2rem 1.25rem;
+  border-top: 1px solid var(--lp-border);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.sms-landing-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--lp-muted);
+}
+
+.sms-landing-footer-brand {
+  font-weight: 700;
+  color: #c7d2fe;
+}
+
+/* ── Mobile landing (PWA / phone) ── */
+@media (max-width: 991.98px) {
+  .sms-landing {
+    min-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .sms-landing-nav {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  .sms-landing-nav-inner {
+    padding: 0.5rem 0.75rem;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0));
+  }
+
+  .sms-landing-brand-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 10px;
+  }
+
+  .sms-landing-brand-name {
+    font-size: 0.85rem;
+  }
+
+  .sms-landing-brand-sub {
+    font-size: 0.65rem;
+  }
+
+  .sms-landing-nav-actions .sms-landing-btn-ghost {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .sms-landing-nav-actions .sms-landing-btn-primary {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+  }
+
+  .sms-landing-hero {
+    padding: 1.5rem 1rem 2.5rem;
+  }
+
+  .sms-landing-hero-badge {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.65rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .sms-landing-hero h1 {
+    font-size: clamp(1.65rem, 7vw, 2.25rem);
+    margin-bottom: 0.75rem;
+  }
+
+  .sms-landing-hero-lead {
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .sms-landing-hero-actions {
+    flex-direction: column;
+    margin-bottom: 1.25rem;
+  }
+
+  .sms-landing-hero-actions .sms-landing-btn-primary,
+  .sms-landing-hero-actions .sms-landing-btn-ghost {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sms-landing-hero-stats {
+    max-width: none;
+    gap: 0.5rem;
+  }
+
+  .sms-landing-stat {
+    padding: 0.55rem 0.35rem;
+  }
+
+  .sms-landing-stat-val {
+    font-size: 1rem;
+  }
+
+  .sms-landing-stat-lbl {
+    font-size: 0.6rem;
+  }
+
+  .sms-landing-preview {
+    display: none;
+  }
+
+  .sms-landing-section {
+    padding: 2.5rem 1rem;
+  }
+
+  .sms-landing-section-head {
+    margin-bottom: 1.5rem;
+  }
+
+  .sms-landing-section-head h2 {
+    font-size: 1.5rem;
+  }
+
+  .sms-landing-section-head p {
+    font-size: 0.9rem;
+  }
+
+  .sms-landing-footer {
+    padding: 1.5rem 1rem;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0));
+  }
+
+  .sms-landing-footer-inner {
+    flex-direction: column;
+    text-align: center;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .sms-landing-nav-actions .sms-landing-btn-primary span,
+  .sms-landing-nav-actions .sms-landing-btn-primary {
+    font-size: 0.75rem;
+  }
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["http://localhost:3000", "http://127.0.0.1:3000", "https://sms.ibratechinnovations.com", "https://hostelrentalapp.web.app", "https://hostelrentalapp.firebaseapp.com"],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization", "Content-Length", "X-Firebase-Storage-Version", "X-Goog-Upload-Protocol", "X-Goog-Upload-Command", "X-Goog-Upload-Header-Content-Length", "X-Goog-Upload-Header-Content-Type", "X-Goog-Upload-Offset"]
+  }
+]
