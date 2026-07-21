@@ -48,7 +48,12 @@ import {
 } from '../../utils/subscription'
 import PwaInstallBanner from '../../components/PwaInstallBanner'
 import AdminTeamHub from '../../components/dashboard/AdminTeamHub'
+import BackupDownloadButton from '../../components/dashboard/BackupDownloadButton'
+import BackupImportButton from '../../components/dashboard/BackupImportButton'
+import AdminQuickStart from '../../components/dashboard/AdminQuickStart'
 import AnimatedNumber from '../../components/engagement/AnimatedNumber'
+import { fetchSchoolBackupData } from '../../utils/csvBackup'
+import { useAppToast } from '../../hooks/useAppToast'
 
 const toDate = (value) => toJsDate(value)
 
@@ -104,6 +109,7 @@ const StatCard = ({ label, value, sub, icon, color = 'primary' }) => (
 
 const ControlCenter = () => {
   const navigate = useNavigate()
+  const appToast = useAppToast()
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
   const [users, setUsers] = useState([])
@@ -210,109 +216,81 @@ const ControlCenter = () => {
   const superAdminActions = [
     {
       icon: cilShieldAlt,
-      title: 'Pending Approvals',
-      description: 'Review and approve users created by school admins before they can sign in.',
+      title: 'Approve users',
+      description: 'Review accounts waiting for approval before they can sign in.',
       to: '/admin/users',
       color: 'warning',
       badge: metrics?.pendingCount ? { color: 'warning', text: `${metrics.pendingCount} pending` } : null,
     },
     {
-      icon: cilSettings,
-      title: 'Platform Control',
-      description: 'Manage all platform users, roles, subscriptions, and permissions.',
-      to: '/admin/users',
-      color: 'danger',
+      icon: cilSpeedometer,
+      title: 'My School',
+      description: 'Cohorts, students, courses, and payments — the daily operations hub.',
+      to: '/admin/overview',
+      color: 'info',
     },
     {
       icon: cilPeople,
-      title: 'All Users',
-      description: 'Browse every account, set granular create/edit/delete permissions, and manage access.',
+      title: 'All users',
+      description: 'Manage every account, role, subscription, and permission.',
       to: '/admin/users',
       color: 'primary',
     },
     {
       icon: cilList,
-      title: 'Login Activity',
-      description: 'Audit who signed in across the platform — user, role, device, and timestamp.',
+      title: 'Sign-ins',
+      description: 'See who logged in, when, and from which device.',
       to: '/admin/logs',
       color: 'dark',
     },
     {
-      icon: cilSpeedometer,
-      title: 'School Overview',
-      description: 'Monitor cohorts, students, courses, and payments across the entire platform.',
-      to: '/admin/overview',
-      color: 'info',
-    },
-    {
       icon: cilChartPie,
       title: 'Analytics',
-      description: 'Charts and trends for enrollment, revenue, and team performance.',
+      description: 'Charts for enrollment, revenue, and collections.',
       to: '/charts',
       color: 'success',
-    },
-    {
-      icon: cilSettings,
-      title: 'Settings',
-      description: 'Theme, notifications, and account preferences for your super-admin account.',
-      to: '/settings',
-      color: 'secondary',
     },
   ]
 
   const adminActions = [
     {
       icon: cilSpeedometer,
-      title: 'School Overview',
-      description: 'Your live workspace — students, cohorts, courses, and payments for your team.',
+      title: 'My School',
+      description: 'Your daily workspace — cohorts, students, courses, and payments.',
       to: '/admin/overview',
       color: 'primary',
-      badge: { color: 'success', text: 'Live' },
+      badge: { color: 'success', text: 'Daily' },
     },
     {
       icon: cilPeople,
-      title: 'My Users',
-      description: 'Create team members, assign create/edit/delete permissions, fire or transfer data.',
+      title: 'Team',
+      description: 'Add coordinators and choose who can create, edit, or delete records.',
       to: '/admin/users',
       color: 'info',
     },
     {
       icon: cilList,
-      title: 'Login Activity',
-      description: 'See when your team members and coordinators last signed in to the system.',
+      title: 'Sign-ins',
+      description: 'See when your team members last signed in.',
       to: '/admin/logs',
       color: 'dark',
     },
     {
       icon: cilChartPie,
       title: 'Analytics',
-      description: 'Track collection rates and team performance across your managed accounts.',
+      description: 'Track collection rates and how your team is performing.',
       to: '/charts',
       color: 'success',
     },
     {
       icon: cilCreditCard,
       title: 'Subscription',
-      description: `Manage your admin plan (${formatMK(ADMIN_SUBSCRIPTION_AMOUNT)}/month). Required for system access.`,
+      description: `Keep your plan active (${formatMK(ADMIN_SUBSCRIPTION_AMOUNT)}/month).`,
       to: '/subscription',
       color: metrics?.subscriptionActive ? 'success' : 'warning',
       badge: metrics?.subscriptionActive
         ? { color: 'success', text: 'Active' }
         : { color: 'warning', text: 'Action needed' },
-    },
-    {
-      icon: cilLockUnlocked,
-      title: 'Permissions Guide',
-      description: 'Grant create, edit, or delete separately per user from the Edit User dialog.',
-      to: '/admin/users',
-      color: 'secondary',
-    },
-    {
-      icon: cilSettings,
-      title: 'Settings',
-      description: 'Notification preferences, theme, and profile shortcuts.',
-      to: '/settings',
-      color: 'secondary',
     },
   ]
 
@@ -333,16 +311,53 @@ const ControlCenter = () => {
             <CBadge color={isSuperAdmin ? 'danger' : 'primary'} className="mb-2">
               {isSuperAdmin ? 'Super Admin' : 'School Admin'}
             </CBadge>
-            <h2 className="fw-bold mb-1">Control Center</h2>
+            <h2 className="fw-bold mb-1">Home</h2>
             <p className="text-muted mb-0">
               {isSuperAdmin
-                ? 'Platform-wide governance — approvals, users, subscriptions, and school data.'
-                : 'Your command hub — team, permissions, subscription, and school operations.'}
+                ? 'Start here — approve users, then open My School for day-to-day operations.'
+                : 'Start here — set up your team, then run your school from My School.'}
             </p>
           </div>
           <PwaInstallBanner compact />
         </div>
       </div>
+
+      <AdminQuickStart role={profile?.role} />
+
+      <CCard className="mb-4 border-0 sms-backup-panel">
+        <CCardBody className="d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
+          <div>
+            <h6 className="fw-bold mb-1">Full system backup</h6>
+            <p className="text-muted small mb-0">
+              {isSuperAdmin
+                ? 'Export or restore all platform data as CSV files in a ZIP — users, students, courses, cohorts, payments, and public sites.'
+                : 'Export or restore your school data as CSV files in a ZIP — team accounts, students, catalog, payments, and your public site.'}
+            </p>
+          </div>
+          <div className="d-flex flex-wrap gap-2">
+            <BackupDownloadButton
+              color={isSuperAdmin ? 'danger' : 'primary'}
+              variant="solid"
+              size="sm"
+              label="Download backup ZIP"
+              onBackup={() => fetchSchoolBackupData(db, profile)}
+              onSuccess={(msg) => appToast.success(msg)}
+              onError={(msg) => appToast.error(msg)}
+            />
+            <BackupImportButton
+              db={db}
+              profile={profile}
+              color={isSuperAdmin ? 'danger' : 'primary'}
+              variant="outline"
+              size="sm"
+              label="Import backup ZIP"
+              onSuccess={(msg) => appToast.success(msg)}
+              onError={(msg) => appToast.error(msg)}
+              onComplete={() => loadData(profile)}
+            />
+          </div>
+        </CCardBody>
+      </CCard>
 
       <PwaInstallBanner />
 
@@ -474,7 +489,7 @@ const ControlCenter = () => {
               ) : (
                 <CAlert color="light" className="mb-0 border">
                   Use the team cards above to review each member&apos;s cohorts, outstanding balances, and payments.
-                  For day-to-day edits, open <strong>School Overview</strong>.
+                  For day-to-day work, open <strong>My School</strong>.
                 </CAlert>
               )}
             </CCardBody>
@@ -541,7 +556,7 @@ const ControlCenter = () => {
                   </CListGroupItem>
                   <CListGroupItem className="bg-transparent border-0 px-0 d-flex gap-2">
                     <CIcon icon={cilCheckCircle} className="text-success mt-1" />
-                    <span className="small">Use School Overview for daily student and payment operations</span>
+                    <span className="small">Use My School for daily student and payment work</span>
                   </CListGroupItem>
                 </CListGroup>
               )}

@@ -17,7 +17,7 @@ const getTabs = (role) => {
   if (role === 'super-admin') {
     return [
       { to: '/admin/control', icon: cilTerminal, label: 'Home' },
-      { to: '/admin/overview', icon: cilSpeedometer, label: 'Schools' },
+      { to: '/admin/overview', icon: cilSpeedometer, label: 'School' },
       { to: '/admin/users', icon: cilPeople, label: 'Users' },
       { to: '/charts', icon: cilChartPie, label: 'Stats' },
       { action: 'menu', icon: cilMenu, label: 'Menu' },
@@ -26,7 +26,7 @@ const getTabs = (role) => {
   if (role === 'admin') {
     return [
       { to: '/admin/control', icon: cilTerminal, label: 'Home' },
-      { to: '/admin/overview', icon: cilSpeedometer, label: 'Overview' },
+      { to: '/admin/overview', icon: cilSpeedometer, label: 'School' },
       { to: '/admin/users', icon: cilPeople, label: 'Team' },
       { to: '/charts', icon: cilChartPie, label: 'Stats' },
       { action: 'menu', icon: cilMenu, label: 'Menu' },
@@ -34,7 +34,7 @@ const getTabs = (role) => {
   }
   if (role === 'teacher') {
     return [
-      { to: '/team', icon: cilLibrary, label: 'Team' },
+      { to: '/team', icon: cilLibrary, label: 'School' },
       { to: '/charts', icon: cilChartPie, label: 'Stats' },
       { action: 'menu', icon: cilMenu, label: 'Menu' },
     ]

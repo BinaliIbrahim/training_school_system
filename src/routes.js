@@ -39,13 +39,13 @@ const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 
 const routes = [
   // ── Primary SMS Pro routes ──
-  { path: '/admin/control', name: 'Control Center', element: ControlCenter },
-  { path: '/dashboard', name: 'Dashboard', element: Dashboard },
-  { path: '/admin/overview', name: 'School Overview', element: SchoolDashboard },
-  { path: '/admin/users', name: 'Manage Users', element: ManageUsers },
-  { path: '/admin/logs', name: 'Login Activity', element: LoginLogs },
-  { path: '/admin/platform', name: 'Platform Control', element: ManageUsers },
-  { path: '/team', name: 'Team Dashboard', element: SchoolDashboard },
+  { path: '/admin/control', name: 'Home', element: ControlCenter },
+  { path: '/dashboard', name: 'My workspace', element: Dashboard },
+  { path: '/admin/overview', name: 'My School', element: SchoolDashboard },
+  { path: '/admin/users', name: 'Team', element: ManageUsers },
+  { path: '/admin/logs', name: 'Sign-ins', element: LoginLogs },
+  { path: '/admin/platform', name: 'All users', element: ManageUsers },
+  { path: '/team', name: 'My School', element: SchoolDashboard },
   { path: '/charts', name: 'Analytics', element: Charts },
   { path: '/admin/site', name: 'My School Website', element: SchoolSiteBuilder },
   { path: '/profile', name: 'Profile', element: Profile },

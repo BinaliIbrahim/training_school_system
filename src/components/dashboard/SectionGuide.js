@@ -1,62 +1,70 @@
 import React from 'react'
 import CIcon from '@coreui/icons-react'
 import { cilLightbulb } from '@coreui/icons'
+import { showWelcomeTips } from '../../utils/onboarding'
 
 const GUIDES = {
-  overview: {
-    title: 'Start here',
+  adminHome: {
+    title: 'My School — quick tips',
     steps: [
-      'Review your business KPIs and charts at a glance',
-      'Check team performance in the table below',
-      'Use Payment Audit to see who paid and who owes',
+      'Overview shows money collected and team totals',
+      'Cohorts → open a cohort to manage students and payments',
+      'Payment Audit (top bar) lists every fee received',
+    ],
+  },
+  overview: {
+    title: 'Overview',
+    steps: [
+      'See how much was collected and what is still outstanding',
+      'Switch Day / Week / Month / Year to change the time window',
+      'Open Cohorts when you are ready to work with students',
     ],
   },
   cohorts: {
-    title: 'Manage cohorts',
+    title: 'Cohorts',
     steps: [
-      'Each card is one intake period (e.g. January 2026)',
-      'Click Open to drill into students, courses & payments',
-      'Use + Add Cohort in the action bar to create new intakes',
+      'Each card is one intake (e.g. January 2026)',
+      'Click Open workspace for students, courses, and payments',
+      'Use Add Cohort in the action bar to create a new intake',
     ],
   },
   cohortDetails: {
     title: 'Cohort workspace',
     steps: [
-      'Use the tabs below — one section at a time',
-      'Students tab shows paid vs balance as cards',
-      'Courses tab lists all programmes in this intake',
+      'Summary — money totals for this intake',
+      'Students — add people, record payments, print receipts',
+      'Payments — every transaction for this cohort',
     ],
   },
   courses: {
-    title: 'All courses',
+    title: 'Courses',
     steps: [
-      'Browse every course across all cohorts',
-      'Each card shows fee, duration & enrollment count',
+      'All programmes linked to your catalog',
+      'Each card shows fee, duration, and how many enrolled',
       'Edit or delete from the card actions',
     ],
   },
   coordinator: {
     title: 'Your workspace',
     steps: [
-      'Use the tabs to switch between overview, cohorts, students, courses & payments',
-      'Add students, courses and cohorts from the action bar',
-      'Track balances on student cards and record payments from Actions',
+      'Overview — KPIs and charts for your students',
+      'Cohorts — open one to see students and payments inside',
+      'Payments — all transactions across your cohorts',
     ],
   },
   coordinatorStudents: {
     title: 'Student cards',
     steps: [
-      'Green badge = fully paid · Amber = balance still due',
-      'Boarding and day scholars are grouped separately',
-      'Use Actions to record payments, view history, or print a receipt',
+      'Green = fully paid · Amber = balance due · Blue = eligible for certs',
+      'Use Actions → Record payment when a student pays',
+      'View details for a full fee breakdown',
     ],
   },
 }
 
 const SectionGuide = ({ section }) => {
   const guide = GUIDES[section]
-  const showTips = localStorage.getItem('sms-show-welcome-tips') !== 'false'
-  if (!guide || !showTips) return null
+  if (!guide || !showWelcomeTips()) return null
 
   return (
     <div className="sms-guide-banner mb-4">

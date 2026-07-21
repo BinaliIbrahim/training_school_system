@@ -286,7 +286,7 @@ const LoginLogs = () => {
         <div>
           <CButton color="link" className="p-0 mb-2 text-decoration-none" onClick={() => navigate('/admin/control')}>
             <CIcon icon={cilArrowLeft} className="me-1" />
-            Back to Control Center
+            Back to Home
           </CButton>
           <h2 className="fw-bold mb-1">
             <CIcon icon={cilList} className="me-2 text-primary" />

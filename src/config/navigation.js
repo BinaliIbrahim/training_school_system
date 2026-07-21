@@ -27,28 +27,27 @@ export const getNavigationForRole = (role) => {
 
   if (role === 'super-admin') {
     nav.push(
-      item('Control Center', '/admin/control', cilTerminal, { color: 'danger', text: 'Hub' }),
-      item('Platform Control', '/admin/platform', cilSettings),
-      item('All Users', '/admin/users', cilPeople),
-      item('Login Activity', '/admin/logs', cilList),
-      item('School Overview', '/admin/overview', cilSpeedometer),
+      item('Home', '/admin/control', cilTerminal, { color: 'danger', text: 'Start' }),
+      item('All users', '/admin/users', cilPeople),
+      item('Sign-ins', '/admin/logs', cilList),
+      item('My School', '/admin/overview', cilSpeedometer),
       item('Analytics', '/charts', cilChartPie),
       item('My Website', '/admin/site', cilGlobeAlt, { color: 'info', text: 'New' }),
     )
   } else if (role === 'admin') {
     nav.push(
-      item('Control Center', '/admin/control', cilTerminal, { color: 'primary', text: 'Hub' }),
-      item('School Overview', '/admin/overview', cilSpeedometer, { color: 'success', text: 'Live' }),
-      item('My Users', '/admin/users', cilPeople),
-      item('Login Activity', '/admin/logs', cilList),
+      item('Home', '/admin/control', cilTerminal, { color: 'primary', text: 'Start' }),
+      item('My School', '/admin/overview', cilSpeedometer, { color: 'success', text: 'Daily' }),
+      item('Team', '/admin/users', cilPeople),
+      item('Sign-ins', '/admin/logs', cilList),
       item('Analytics', '/charts', cilChartPie),
       item('My Website', '/admin/site', cilGlobeAlt, { color: 'info', text: 'New' }),
     )
   } else if (role === 'teacher') {
-    nav.push(item('Team Dashboard', '/team', cilLibrary))
+    nav.push(item('My School', '/team', cilLibrary))
   } else {
     nav.push(
-      item('My Dashboard', '/dashboard', cilSpeedometer),
+      item('My workspace', '/dashboard', cilSpeedometer),
       item('Analytics', '/charts', cilChartPie),
     )
   }

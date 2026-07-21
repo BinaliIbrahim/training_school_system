@@ -140,6 +140,10 @@ import { notifyCrud } from '../../utils/notifications';
 import { matchesSearchQuery } from '../../utils/search';
 import { useAppToast } from '../../hooks/useAppToast';
 import { StudentStatusBadge, StudentEligibilityBanner } from '../../components/dashboard/StudentEligibility';
+import BackupDownloadButton from '../../components/dashboard/BackupDownloadButton';
+import BackupImportButton from '../../components/dashboard/BackupImportButton';
+import AdminQuickStart from '../../components/dashboard/AdminQuickStart';
+import { fetchSchoolBackupData } from '../../utils/csvBackup';
 
 const formatMK = (amount) =>
   new Intl.NumberFormat('en-MW', {
@@ -324,7 +328,10 @@ const SchoolDashboard = () => {
     if (location.state?.focusUserId) {
       setFilterUser(location.state.focusUserId);
     }
-  }, [location.state?.focusUserId]);
+    if (location.state?.activeSection) {
+      setActiveSection(location.state.activeSection);
+    }
+  }, [location.state?.focusUserId, location.state?.activeSection]);
 
   // -------------------------------------------------
   // AUTH + ROLE + SUBSCRIPTION CHECK
@@ -1252,6 +1259,12 @@ const SchoolDashboard = () => {
     setAllPaymentsModal(true);
     setCurrentPaymentPage(1);
   };
+
+  useEffect(() => {
+    if (location.state?.openPayments) {
+      openAllPaymentsModal();
+    }
+  }, [location.state?.openPayments]);
 
   const openStudentDetailModal = (student) => {
     setSelectedStudent(student);
@@ -3117,6 +3130,27 @@ const SchoolDashboard = () => {
       {/* Action Buttons */}
       {activeSection !== 'cohortDetails' && (
       <div className="sms-action-bar">
+        {(userRole === 'admin' || userRole === 'super-admin') && (
+          <>
+            <BackupDownloadButton
+              color="secondary"
+              onBackup={() =>
+                fetchSchoolBackupData(db, { id: user.uid, ...userProfile, role: userRole })
+              }
+              onSuccess={(msg) => appToast.success(msg)}
+              onError={(msg) => appToast.error(msg)}
+            />
+            <BackupImportButton
+              db={db}
+              profile={{ id: user?.uid, ...userProfile, role: userRole }}
+              color="secondary"
+              label="Import backup"
+              onSuccess={(msg) => appToast.success(msg)}
+              onError={(msg) => appToast.error(msg)}
+              onComplete={reloadData}
+            />
+          </>
+        )}
         {canEdit && (
           <CButton color="primary" variant="outline" onClick={exportAllStudentsPDF}>
             <CIcon icon={cilCloudDownload} className="me-1" /> Export Students ({hasActiveStudentFilters ? filteredStudents.length : allStudents.length})
@@ -3145,6 +3179,10 @@ const SchoolDashboard = () => {
 
       {activeSection !== 'cohortDetails' && (
         <DailyMomentum className="mb-3" />
+      )}
+
+      {activeSection !== 'cohortDetails' && (userRole === 'admin' || userRole === 'super-admin') && (
+        <AdminQuickStart role={userRole} compact />
       )}
 
       {userRole === 'teacher' && (
@@ -3195,7 +3233,11 @@ const SchoolDashboard = () => {
       {/* Overview Section */}
       {activeSection === 'overview' && (
         <>
-          <SectionGuide section="overview" />
+          {(userRole === 'admin' || userRole === 'super-admin') ? (
+            <SectionGuide section="adminHome" />
+          ) : (
+            <SectionGuide section="overview" />
+          )}
           <SchoolOverviewPanel
             canEdit={canEdit}
             dateFilter={dateFilter}

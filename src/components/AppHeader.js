@@ -53,26 +53,26 @@ import AppLogo from './brand/AppLogo'
 const getQuickNav = (role) => {
   if (role === 'super-admin') {
     return [
-      { to: '/admin/control', label: 'Control', icon: cilTerminal },
-      { to: '/admin/overview', label: 'Overview', icon: cilSpeedometer },
+      { to: '/admin/control', label: 'Home', icon: cilTerminal },
+      { to: '/admin/overview', label: 'My School', icon: cilSpeedometer },
       { to: '/charts', label: 'Analytics', icon: cilChartPie },
     ]
   }
   if (role === 'admin') {
     return [
-      { to: '/admin/control', label: 'Control', icon: cilTerminal },
-      { to: '/admin/overview', label: 'Overview', icon: cilSpeedometer },
+      { to: '/admin/control', label: 'Home', icon: cilTerminal },
+      { to: '/admin/overview', label: 'My School', icon: cilSpeedometer },
       { to: '/charts', label: 'Analytics', icon: cilChartPie },
     ]
   }
   if (role === 'teacher') {
     return [
-      { to: '/team', label: 'Team', icon: cilLibrary },
+      { to: '/team', label: 'My School', icon: cilLibrary },
       { to: '/charts', label: 'Analytics', icon: cilChartPie },
     ]
   }
   return [
-    { to: '/dashboard', label: 'Dashboard', icon: cilSpeedometer },
+    { to: '/dashboard', label: 'Workspace', icon: cilSpeedometer },
     { to: '/charts', label: 'Analytics', icon: cilChartPie },
   ]
 }
