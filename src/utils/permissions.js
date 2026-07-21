@@ -12,7 +12,7 @@ export const DEFAULT_PERMISSIONS = {
   delete: false,
 }
 
-/** Full CRUD defaults for new coordinators — admin/super-admin can revoke anytime */
+/** Default CRUD for coordinators — create/edit/delete students & payments; catalog is admin-only */
 export const COORDINATOR_PERMISSIONS = {
   create: true,
   edit: true,

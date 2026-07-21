@@ -1,5 +1,5 @@
 // Unified school dashboard — admin, super-admin (write), teacher (read-only)
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   CButton,
   CButtonGroup,
@@ -122,8 +122,24 @@ import CohortDetailPanel from '../../components/dashboard/CohortDetailPanel';
 import CoursesPanel from '../../components/dashboard/CoursesPanel';
 import SectionGuide from '../../components/dashboard/SectionGuide';
 import { canUserCreate, canUserEdit, canUserDelete, isUserApproved, APPROVAL } from '../../utils/permissions';
+import {
+  canManageCatalog as roleCanManageCatalog,
+  getCatalogOwnerId,
+  resolveCatalogOwnerId,
+  mergeCatalogItems,
+  findCourseForStudent,
+  findCohortForStudent,
+  getCourseFeeForStudent,
+  studentMatchesCohort,
+  studentMatchesCourse,
+  calcTotalDueForStudent,
+  calcBalanceForStudent,
+  isEligibleForEquipmentAndCertificates,
+} from '../../utils/schoolCatalog';
 import { notifyCrud } from '../../utils/notifications';
+import { matchesSearchQuery } from '../../utils/search';
 import { useAppToast } from '../../hooks/useAppToast';
+import { StudentStatusBadge, StudentEligibilityBanner } from '../../components/dashboard/StudentEligibility';
 
 const formatMK = (amount) =>
   new Intl.NumberFormat('en-MW', {
@@ -141,6 +157,7 @@ const SchoolDashboard = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [subscriptionOk, setSubscriptionOk] = useState(false);
   const [managedUsers, setManagedUsers] = useState([]);
+  const [catalogOwnerId, setCatalogOwnerId] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -231,6 +248,7 @@ const SchoolDashboard = () => {
   const [filterCourse, setFilterCourse] = useState('');
   const [filterCohort, setFilterCohort] = useState('');
   const [filterUser, setFilterUser] = useState('');
+  const [studentOwnerId, setStudentOwnerId] = useState('');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('');
   const [dateFilter, setDateFilter] = useState('Month');
@@ -263,6 +281,35 @@ const SchoolDashboard = () => {
   const canCreate = useMemo(() => canUserCreate(crudProfile), [crudProfile]);
   const canEdit = useMemo(() => canUserEdit(crudProfile), [crudProfile]);
   const canDelete = useMemo(() => canUserDelete(crudProfile), [crudProfile]);
+  const canManageCatalog = useMemo(() => roleCanManageCatalog(userRole), [userRole]);
+
+  const catalogCourses = useMemo(
+    () => (catalogOwnerId ? allCourses.filter((c) => c.ownerId === catalogOwnerId) : allCourses),
+    [allCourses, catalogOwnerId],
+  );
+
+  const catalogCohorts = useMemo(
+    () => (catalogOwnerId ? allCohorts.filter((c) => c.ownerId === catalogOwnerId) : allCohorts),
+    [allCohorts, catalogOwnerId],
+  );
+
+  const studentOwnerOptions = useMemo(() => {
+    if (userRole === 'teacher') {
+      return managedUsers.filter((u) => u.id === user?.uid)
+    }
+    const team = managedUsers.filter((u) => u.userType === 'managed')
+    return team.length > 0 ? team : managedUsers
+  }, [managedUsers, userRole, user?.uid]);
+
+  const applyCourseToStudentForm = (courseId, prevForm) => ({
+    ...prevForm,
+    courseId,
+  })
+
+  const formCourseFee = useMemo(() => {
+    const course = catalogCourses.find((c) => c.id === studentForm.courseId)
+    return course?.fee ?? null
+  }, [studentForm.courseId, catalogCourses])
 
   const requirePermission = (type) => {
     const allowed = { create: canCreate, edit: canEdit, delete: canDelete }[type];
@@ -361,7 +408,14 @@ const SchoolDashboard = () => {
         }
 
         setSubscriptionOk(true);
-        await loadManagedUsers(userRole, firebaseUser.uid, data.managedUserIds);
+        const catalogId = await resolveCatalogOwnerId(
+          db,
+          { id: firebaseUser.uid, ...data },
+          userRole,
+          firebaseUser.uid,
+        );
+        setCatalogOwnerId(catalogId);
+        await loadManagedUsers(userRole, firebaseUser.uid, data.managedUserIds, data.managedBy, catalogId);
         
       } catch (err) {
         console.error('Auth error:', err);
@@ -378,9 +432,10 @@ const SchoolDashboard = () => {
   // -------------------------------------------------
   // LOAD MANAGED USERS
   // -------------------------------------------------
-  const loadManagedUsers = async (role, userId, managedUserIds = []) => {
+  const loadManagedUsers = async (role, userId, managedUserIds = [], managedBy = null, catalogId = null) => {
     try {
       let userList = [];
+      let catalogOwnerIds = [];
       
       if (role === 'super-admin') {
         const snapshot = await getDocs(collection(db, 'users'));
@@ -389,6 +444,11 @@ const SchoolDashboard = () => {
           ...doc.data(),
           userType: 'direct'
         }));
+        catalogOwnerIds = [...new Set(
+          userList
+            .filter((u) => u.role === 'admin' || u.role === 'super-admin')
+            .map((u) => u.id),
+        )];
       } else if (role === 'admin') {
         userList = [{ id: userId, userType: 'self' }];
         
@@ -401,16 +461,21 @@ const SchoolDashboard = () => {
             return null;
           });
           
-          const managedUsers = (await Promise.all(userPromises)).filter(Boolean);
-          userList.push(...managedUsers);
+          const managedUsersList = (await Promise.all(userPromises)).filter(Boolean);
+          userList.push(...managedUsersList);
         }
+        catalogOwnerIds = [userId];
       } else if (role === 'teacher') {
-        // Teachers can only see their own data
         userList = [{ id: userId, userType: 'self' }];
+        if (managedBy) {
+          catalogOwnerIds = [managedBy];
+        } else if (catalogId) {
+          catalogOwnerIds = [catalogId];
+        }
       }
       
       setManagedUsers(userList);
-      await loadAllUserData(userList);
+      await loadAllUserData(userList, catalogOwnerIds);
     } catch (err) {
       console.error('Error loading managed users:', err);
       showAlert('Error loading managed users: ' + err.message, 'danger');
@@ -421,7 +486,7 @@ const SchoolDashboard = () => {
   // -------------------------------------------------
   // LOAD ALL USER DATA
   // -------------------------------------------------
-  const loadAllUserData = async (userList) => {
+  const loadAllUserData = async (userList, catalogOwnerIds = []) => {
     try {
       let allStudentsData = [];
       let allCoursesData = [];
@@ -431,7 +496,7 @@ const SchoolDashboard = () => {
       for (const userData of userList) {
         const userId = userData.id;
         
-        // Load students
+        // Students & payments belong to each team member
         try {
           const studentsQuery = query(collection(db, `users/${userId}/students`));
           const studentsSnapshot = await getDocs(studentsQuery);
@@ -450,45 +515,6 @@ const SchoolDashboard = () => {
           console.error(`Error loading students for user ${userId}:`, err);
         }
 
-        // Load courses
-        try {
-          const coursesQuery = query(collection(db, `users/${userId}/courses`));
-          const coursesSnapshot = await getDocs(coursesQuery);
-          const courses = coursesSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              ownerId: userId,
-              ownerName: userData.fullName || userData.email || `User ${userId.substring(0, 8)}`,
-              ownerType: userData.userType
-            };
-          });
-          allCoursesData.push(...courses);
-        } catch (err) {
-          console.error(`Error loading courses for user ${userId}:`, err);
-        }
-
-        // Load cohorts
-        try {
-          const cohortsQuery = query(collection(db, `users/${userId}/cohorts`));
-          const cohortsSnapshot = await getDocs(cohortsQuery);
-          const cohorts = cohortsSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              ownerId: userId,
-              ownerName: userData.fullName || userData.email || `User ${userId.substring(0, 8)}`,
-              ownerType: userData.userType
-            };
-          });
-          allCohortsData.push(...cohorts);
-        } catch (err) {
-          console.error(`Error loading cohorts for user ${userId}:`, err);
-        }
-
-        // Load payments
         try {
           const paymentsQuery = query(collection(db, `users/${userId}/payments`));
           const paymentsSnapshot = await getDocs(paymentsQuery);
@@ -506,15 +532,92 @@ const SchoolDashboard = () => {
         } catch (err) {
           console.error(`Error loading payments for user ${userId}:`, err);
         }
+
+        // Legacy workspace courses/cohorts (created before shared admin catalog)
+        try {
+          const legacyCoursesSnapshot = await getDocs(query(collection(db, `users/${userId}/courses`)));
+          allCoursesData.push(
+            ...legacyCoursesSnapshot.docs.map((d) => ({
+              id: d.id,
+              ...d.data(),
+              ownerId: userId,
+              ownerName: userData.fullName || userData.email || `User ${userId.substring(0, 8)}`,
+              ownerType: userData.userType,
+              legacy: true,
+            })),
+          );
+        } catch (err) {
+          console.error(`Error loading legacy courses for user ${userId}:`, err);
+        }
+
+        try {
+          const legacyCohortsSnapshot = await getDocs(query(collection(db, `users/${userId}/cohorts`)));
+          allCohortsData.push(
+            ...legacyCohortsSnapshot.docs.map((d) => ({
+              id: d.id,
+              ...d.data(),
+              ownerId: userId,
+              ownerName: userData.fullName || userData.email || `User ${userId.substring(0, 8)}`,
+              ownerType: userData.userType,
+              legacy: true,
+            })),
+          );
+        } catch (err) {
+          console.error(`Error loading legacy cohorts for user ${userId}:`, err);
+        }
+      }
+
+      // Courses & cohorts live in the school admin catalog only
+      const uniqueCatalogIds = [...new Set(catalogOwnerIds.filter(Boolean))];
+      for (const catalogId of uniqueCatalogIds) {
+        let catalogUser = userList.find((u) => u.id === catalogId);
+        if (!catalogUser) {
+          const catalogSnap = await getDoc(doc(db, 'users', catalogId));
+          if (catalogSnap.exists()) {
+            catalogUser = { id: catalogId, ...catalogSnap.data(), userType: 'catalog' };
+          }
+        }
+        const catalogName =
+          catalogUser?.fullName || catalogUser?.email || `Admin ${catalogId.substring(0, 8)}`;
+
+        try {
+          const coursesSnapshot = await getDocs(query(collection(db, `users/${catalogId}/courses`)));
+          allCoursesData.push(
+            ...coursesSnapshot.docs.map((d) => ({
+              id: d.id,
+              ...d.data(),
+              ownerId: catalogId,
+              ownerName: catalogName,
+              ownerType: 'catalog',
+            })),
+          );
+        } catch (err) {
+          console.error(`Error loading catalog courses for ${catalogId}:`, err);
+        }
+
+        try {
+          const cohortsSnapshot = await getDocs(query(collection(db, `users/${catalogId}/cohorts`)));
+          allCohortsData.push(
+            ...cohortsSnapshot.docs.map((d) => ({
+              id: d.id,
+              ...d.data(),
+              ownerId: catalogId,
+              ownerName: catalogName,
+              ownerType: 'catalog',
+            })),
+          );
+        } catch (err) {
+          console.error(`Error loading catalog cohorts for ${catalogId}:`, err);
+        }
       }
 
       setAllStudents(allStudentsData);
-      setAllCourses(allCoursesData);
-      setAllCohorts(allCohortsData);
+      setAllCourses(mergeCatalogItems(allCoursesData, []));
+      setAllCohorts(mergeCatalogItems(allCohortsData, []));
       setAllPayments(allPaymentsData);
       setDataLoading(false);
       
-      calculateTotals(allStudentsData, allCoursesData);
+      calculateTotals(allStudentsData, mergeCatalogItems(allCoursesData, []));
     } catch (err) {
       console.error('Error loading user data:', err);
       showAlert('Error loading user data: ' + err.message, 'danger');
@@ -531,12 +634,7 @@ const SchoolDashboard = () => {
     let totalDueAmount = 0;
 
     students.forEach((s) => {
-      const course = courses.find((c) => c.id === s.courseId && c.ownerId === s.ownerId);
-      const totalDue =
-        (course?.fee ?? 0) +
-        (s.registrationFee ?? 0) +
-        (s.trainingFee ?? 0) +
-        (s.boardingFee ?? 0);
+      const totalDue = calcTotalDueForStudent(s, courses, catalogOwnerId);
       const paid = s.amountPaid ?? 0;
       collected += paid;
       balance += totalDue - paid;
@@ -583,10 +681,6 @@ const SchoolDashboard = () => {
     });
   }, [allStudents, dateFilter]);
 
-  useEffect(() => {
-    calculateTotals(filteredStudentsByDate, allCourses);
-  }, [filteredStudentsByDate, allCourses]);
-
   // -------------------------------------------------
   // VALIDATIONS (From Dashboard)
   // -------------------------------------------------
@@ -598,7 +692,6 @@ const SchoolDashboard = () => {
     if (!studentForm.age || studentForm.age <= 0) e.age = 'Valid age required';
     if (!studentForm.gender) e.gender = 'Select gender';
     if (studentForm.registrationFee && studentForm.registrationFee < 0) e.registrationFee = '≥ 0';
-    if (studentForm.trainingFee && studentForm.trainingFee < 0) e.trainingFee = '≥ 0';
     if (studentForm.amountPaid && studentForm.amountPaid < 0) e.amountPaid = '≥ 0';
     if (studentForm.phoneNumber && !/^\d{10}$/.test(studentForm.phoneNumber)) e.phoneNumber = 'Valid 10-digit phone required';
     return e;
@@ -625,45 +718,78 @@ const SchoolDashboard = () => {
     return e;
   };
 
+  const calcTotalDue = (student) => calcTotalDueForStudent(student, allCourses, catalogOwnerId);
+  const calcBalance = (student) => calcBalanceForStudent(student, allCourses, catalogOwnerId);
+
   // -------------------------------------------------
   // FILTERED DATA (Updated with Dashboard logic)
   // -------------------------------------------------
   const filteredCohorts = useMemo(() => {
-    return allCohorts.filter((c) => {
-      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           (c.ownerName && c.ownerName.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesUser = !filterUser || c.ownerId === filterUser;
-      return matchesSearch && matchesUser;
-    });
-  }, [allCohorts, searchQuery, filterUser]);
+    return allCohorts.filter((c) =>
+      matchesSearchQuery(searchQuery, c.name, c.description, c.ownerName),
+    );
+  }, [allCohorts, searchQuery]);
 
   const filteredCourses = useMemo(() => {
     return allCourses.filter((c) => {
-      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           (c.ownerName && c.ownerName.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch = matchesSearchQuery(searchQuery, c.name, c.description, c.type, c.ownerName);
       const matchesType = !filterType || c.type === filterType;
       const matchesDuration = !filterDuration || c.weeksOrMonths === parseInt(filterDuration);
       const matchesCohort = !filterCohort || c.cohortId === filterCohort;
-      const matchesUser = !filterUser || c.ownerId === filterUser;
-      return matchesSearch && matchesType && matchesDuration && matchesCohort && matchesUser;
+      return matchesSearch && matchesType && matchesDuration && matchesCohort;
     });
-  }, [allCourses, searchQuery, filterType, filterDuration, filterCohort, filterUser]);
+  }, [allCourses, searchQuery, filterType, filterDuration, filterCohort]);
 
   const filteredStudents = useMemo(() => {
     return filteredStudentsByDate.filter((s) => {
-      const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           (s.ownerName && s.ownerName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                           (s.transId && s.transId.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                           (s.modeOfPayment && s.modeOfPayment.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch = matchesSearchQuery(
+        searchQuery,
+        s.name,
+        s.phoneNumber,
+        s.phone,
+        s.ownerName,
+        s.transId,
+        s.modeOfPayment,
+        s.courseName,
+        s.cohortName,
+      );
       const matchesCourse = !filterCourse || s.courseId === filterCourse;
       const matchesCohort = !filterCohort || s.cohortId === filterCohort;
       const matchesUser = !filterUser || s.ownerId === filterUser;
       const matchesPaymentMethod = !filterPaymentMethod || s.modeOfPayment === filterPaymentMethod;
-      const matchesPaymentStatus = !filterPaymentStatus || 
+      const matchesPaymentStatus = !filterPaymentStatus ||
         (filterPaymentStatus === 'paid' ? calcBalance(s) <= 0 : calcBalance(s) > 0);
       return matchesSearch && matchesCourse && matchesCohort && matchesUser && matchesPaymentMethod && matchesPaymentStatus;
     });
-  }, [filteredStudentsByDate, searchQuery, filterCourse, filterCohort, filterUser, filterPaymentMethod, filterPaymentStatus]);
+  }, [filteredStudentsByDate, searchQuery, filterCourse, filterCohort, filterUser, filterPaymentMethod, filterPaymentStatus, allCourses, catalogOwnerId]);
+
+  const hasActiveStudentFilters = Boolean(
+    searchQuery || filterUser || filterPaymentMethod || filterPaymentStatus || filterCourse || filterCohort,
+  );
+
+  const displayCohorts = useMemo(() => {
+    if (!hasActiveStudentFilters) return filteredCohorts;
+    const linked = new Set(
+      filteredStudents
+        .filter((s) => s.cohortId)
+        .map((s) => `${s.ownerId}-${s.cohortId}`),
+    );
+    return filteredCohorts.filter((c) => linked.has(`${c.ownerId}-${c.id}`));
+  }, [filteredCohorts, filteredStudents, hasActiveStudentFilters]);
+
+  const displayCourses = useMemo(() => {
+    if (!hasActiveStudentFilters) return filteredCourses;
+    const linked = new Set(
+      filteredStudents
+        .filter((s) => s.courseId)
+        .map((s) => `${s.ownerId}-${s.courseId}`),
+    );
+    return filteredCourses.filter((c) => linked.has(`${c.ownerId}-${c.id}`));
+  }, [filteredCourses, filteredStudents, hasActiveStudentFilters]);
+
+  useEffect(() => {
+    calculateTotals(filteredStudents, allCourses);
+  }, [filteredStudents, allCourses]);
 
   // -------------------------------------------------
   // COMPLETE PAYMENT AUDIT LOGIC (From Dashboard)
@@ -704,12 +830,16 @@ const SchoolDashboard = () => {
     let filtered = getAllPaymentsWithInitial;
 
     if (paymentSearchQuery) {
-      filtered = filtered.filter(p => 
-        (p.studentName && p.studentName.toLowerCase().includes(paymentSearchQuery.toLowerCase())) ||
-        (p.ownerName && p.ownerName.toLowerCase().includes(paymentSearchQuery.toLowerCase())) ||
-        (p.referenceNumber && p.referenceNumber.toLowerCase().includes(paymentSearchQuery.toLowerCase())) ||
-        (p.paymentMethod && p.paymentMethod.toLowerCase().includes(paymentSearchQuery.toLowerCase())) ||
-        (p.notes && p.notes.toLowerCase().includes(paymentSearchQuery.toLowerCase()))
+      filtered = filtered.filter((p) =>
+        matchesSearchQuery(
+          paymentSearchQuery,
+          p.studentName,
+          p.ownerName,
+          p.referenceNumber,
+          p.paymentMethod,
+          p.notes,
+          p.amount,
+        ),
       );
     }
 
@@ -767,8 +897,6 @@ const SchoolDashboard = () => {
   const userStatistics = useMemo(() => {
     return managedUsers.map(managedUser => {
       const userStudents = allStudents.filter(s => s.ownerId === managedUser.id);
-      const userCourses = allCourses.filter(c => c.ownerId === managedUser.id);
-      const userCohorts = allCohorts.filter(ch => ch.ownerId === managedUser.id);
       const userPayments = allPayments.filter(p => p.ownerId === managedUser.id);
       
       let userCollected = 0;
@@ -776,44 +904,82 @@ const SchoolDashboard = () => {
       let userTotalDue = 0;
       
       userStudents.forEach(s => {
-        const course = allCourses.find(c => c.id === s.courseId && c.ownerId === managedUser.id);
-        const totalDue = (course?.fee ?? 0) + (s.registrationFee ?? 0) + (s.trainingFee ?? 0) + (s.boardingFee ?? 0);
+        const totalDue = calcTotalDueForStudent(s, allCourses, catalogOwnerId);
         const paid = s.amountPaid ?? 0;
         userCollected += paid;
         userBalance += totalDue - paid;
         userTotalDue += totalDue;
       });
 
+      const activeCohortIds = new Set(userStudents.map((s) => s.cohortId).filter(Boolean));
+      const activeCourseIds = new Set(userStudents.map((s) => s.courseId).filter(Boolean));
+
       return {
         ...managedUser,
         studentCount: userStudents.length,
-        courseCount: userCourses.length,
-        cohortCount: userCohorts.length,
+        courseCount: activeCourseIds.size,
+        cohortCount: activeCohortIds.size,
         paymentCount: userPayments.length,
         totalCollected: userCollected,
         totalBalance: userBalance,
         totalDue: userTotalDue
       };
     });
-  }, [managedUsers, allStudents, allCourses, allCohorts, allPayments]);
+  }, [managedUsers, allStudents, allCourses, allCohorts, allPayments, catalogOwnerId]);
+
+  const teamFinance = useMemo(() => {
+    return managedUsers
+      .filter((u) => u.userType === 'managed')
+      .filter((u) => !filterUser || u.id === filterUser)
+      .map((managedUser) => {
+        const userStudents = filteredStudents.filter((s) => s.ownerId === managedUser.id);
+        let totalDue = 0;
+        let totalCollected = 0;
+        let totalBalance = 0;
+        let pendingStudents = 0;
+
+        userStudents.forEach((s) => {
+          const due = calcTotalDueForStudent(s, allCourses, catalogOwnerId);
+          const paid = s.amountPaid ?? 0;
+          const balance = calcBalanceForStudent(s, allCourses, catalogOwnerId);
+          totalDue += due;
+          totalCollected += paid;
+          if (balance > 0) {
+            totalBalance += balance;
+            pendingStudents += 1;
+          }
+        });
+
+        return {
+          userId: managedUser.id,
+          name: managedUser.fullName || managedUser.email,
+          email: managedUser.email,
+          studentCount: userStudents.length,
+          totalDue,
+          totalCollected,
+          totalBalance,
+          pendingStudents,
+          paymentCount: allPayments.filter((p) => p.ownerId === managedUser.id).length,
+        };
+      });
+  }, [managedUsers, filteredStudents, filterUser, allCourses, allPayments, catalogOwnerId]);
 
   // -------------------------------------------------
   // HELPER FUNCTIONS
   // -------------------------------------------------
-  const calcTotalDue = (student) => {
-    if (!student) return 0;
-    const course = allCourses.find((c) => c.id === student.courseId && c.ownerId === student.ownerId);
-    return (course?.fee ?? 0) +
-           (student.registrationFee ?? 0) +
-           (student.trainingFee ?? 0) +
-           (student.boardingFee ?? 0);
-  };
+  const reloadData = useCallback(async () => {
+    await loadManagedUsers(
+      userRole,
+      user?.uid,
+      userProfile?.managedUserIds || [],
+      userProfile?.managedBy,
+      catalogOwnerId,
+    );
+  }, [userRole, user?.uid, userProfile, catalogOwnerId]);
 
-  const calcBalance = (student) => {
-    if (!student) return 0;
-    const totalDue = calcTotalDue(student);
-    return totalDue - (student.amountPaid ?? 0);
-  };
+  const resolveCourse = (student) => findCourseForStudent(student, allCourses, catalogOwnerId);
+
+  const resolveCohort = (student) => findCohortForStudent(student, allCohorts, catalogOwnerId);
 
   const getCohortStatus = (cohort) => {
     if (!cohort.startDate || !cohort.endDate) return { text: 'Unknown', color: 'secondary' };
@@ -923,6 +1089,11 @@ const SchoolDashboard = () => {
   // -------------------------------------------------
   const openAddStudent = () => {
     if (!requirePermission('create')) return;
+    const defaultOwner =
+      userRole === 'teacher'
+        ? user?.uid || ''
+        : studentOwnerOptions[0]?.id || filterUser || user?.uid || '';
+    setStudentOwnerId(defaultOwner);
     setStudentForm({
       name: '',
       phoneNumber: '',
@@ -962,6 +1133,10 @@ const SchoolDashboard = () => {
   };
 
   const openAddCourse = () => {
+    if (!canManageCatalog) {
+      showAlert('Only your school admin can create courses. Pick from the shared catalog.', 'warning');
+      return;
+    }
     if (!requirePermission('create')) return;
     setCourseForm({
       name: '',
@@ -975,6 +1150,7 @@ const SchoolDashboard = () => {
   };
 
   const openEditCourse = (course) => {
+    if (!canManageCatalog) return;
     if (!requirePermission('edit')) return;
     setSelectedCourse(course);
     setCourseForm({
@@ -989,6 +1165,10 @@ const SchoolDashboard = () => {
   };
 
   const openAddCohort = () => {
+    if (!canManageCatalog) {
+      showAlert('Only your school admin can create cohorts. Pick from the shared catalog.', 'warning');
+      return;
+    }
     if (!requirePermission('create')) return;
     setCohortForm({
       name: '',
@@ -1001,6 +1181,7 @@ const SchoolDashboard = () => {
   };
 
   const openEditCohort = (cohort) => {
+    if (!canManageCatalog) return;
     if (!requirePermission('edit')) return;
     setSelectedCohort(cohort);
     setCohortForm({
@@ -1090,9 +1271,10 @@ const SchoolDashboard = () => {
     }
 
     try {
-      const ownerId = filterUser || user?.uid;
+      const ownerId =
+        userRole === 'teacher' ? user?.uid : studentOwnerId || filterUser || user?.uid;
       if (!ownerId) {
-        showAlert('Please select a user first', 'danger');
+        showAlert('Please select which team member this student belongs to', 'danger');
         return;
       }
 
@@ -1103,8 +1285,8 @@ const SchoolDashboard = () => {
         gender: studentForm.gender,
         courseId: studentForm.courseId,
         cohortId: studentForm.cohortId,
+        catalogOwnerId: catalogOwnerId || user?.uid,
         registrationFee: parseFloat(studentForm.registrationFee) || 0,
-        trainingFee: parseFloat(studentForm.trainingFee) || 0,
         boardingFee: parseFloat(studentForm.boardingFee) || 0,
         amountPaid: parseFloat(studentForm.amountPaid) || 0,
         modeOfPayment: studentForm.modeOfPayment,
@@ -1116,7 +1298,7 @@ const SchoolDashboard = () => {
 
       await addDoc(collection(db, `users/${ownerId}/students`), studentPayload);
 
-      await loadManagedUsers(userRole, user?.uid, managedUsers.map(u => u.id));
+      await reloadData();
       setAddStudentModal(false);
       setFormErrors({});
       showAlert('Student added successfully!');
@@ -1141,8 +1323,8 @@ const SchoolDashboard = () => {
         gender: studentForm.gender,
         courseId: studentForm.courseId,
         cohortId: studentForm.cohortId,
+        catalogOwnerId: selectedStudent.catalogOwnerId || catalogOwnerId || user?.uid,
         registrationFee: parseFloat(studentForm.registrationFee) || 0,
-        trainingFee: parseFloat(studentForm.trainingFee) || 0,
         boardingFee: parseFloat(studentForm.boardingFee) || 0,
         amountPaid: parseFloat(studentForm.amountPaid) || 0,
         modeOfPayment: studentForm.modeOfPayment,
@@ -1150,7 +1332,7 @@ const SchoolDashboard = () => {
         updatedAt: serverTimestamp(),
       });
 
-      await loadManagedUsers(userRole, user?.uid, managedUsers.map(u => u.id));
+      await reloadData();
       setEditStudentModal(false);
       showAlert('Student updated successfully!');
       notifyCrud('updated', 'student', studentForm.name, { workspaceUserId: selectedStudent.ownerId });
@@ -1161,12 +1343,16 @@ const SchoolDashboard = () => {
   };
 
   const handleAddCourse = async () => {
+    if (!canManageCatalog) {
+      showAlert('Only school admins can create courses.', 'warning');
+      return;
+    }
     if (!requirePermission('create')) return;
 
     try {
-      const ownerId = filterUser || user?.uid;
+      const ownerId = userRole === 'super-admin' ? (filterUser || user?.uid) : user?.uid;
       if (!ownerId) {
-        showAlert('Please select a user first', 'danger');
+        showAlert('Could not determine catalog owner', 'danger');
         return;
       }
 
@@ -1177,13 +1363,14 @@ const SchoolDashboard = () => {
         weeksOrMonths: parseInt(courseForm.weeksOrMonths) || 0,
         cohortId: courseForm.cohortId,
         duration: courseForm.duration || `${courseForm.weeksOrMonths} ${courseForm.type === 'weekly' ? 'week' : 'month'}${courseForm.weeksOrMonths > 1 ? 's' : ''}`,
+        sharedCatalog: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
       await addDoc(collection(db, `users/${ownerId}/courses`), coursePayload);
 
-      await loadManagedUsers(userRole, user?.uid, managedUsers.map(u => u.id));
+      await reloadData();
       setAddCourseModal(false);
       showAlert('Course added successfully!');
       notifyCrud('created', 'course', courseForm.name, { workspaceUserId: ownerId });
@@ -1210,7 +1397,7 @@ const SchoolDashboard = () => {
         updatedAt: serverTimestamp(),
       });
 
-      await loadManagedUsers(userRole, user?.uid, managedUsers.map(u => u.id));
+      await reloadData();
       setEditCourseModal(false);
       showAlert('Course updated successfully!');
       notifyCrud('updated', 'course', courseForm.name, { workspaceUserId: selectedCourse.ownerId });
@@ -1221,12 +1408,16 @@ const SchoolDashboard = () => {
   };
 
   const handleAddCohort = async () => {
+    if (!canManageCatalog) {
+      showAlert('Only school admins can create cohorts.', 'warning');
+      return;
+    }
     if (!requirePermission('create')) return;
 
     try {
-      const ownerId = filterUser || user?.uid;
+      const ownerId = userRole === 'super-admin' ? (filterUser || user?.uid) : user?.uid;
       if (!ownerId) {
-        showAlert('Please select a user first', 'danger');
+        showAlert('Could not determine catalog owner', 'danger');
         return;
       }
 
@@ -1236,13 +1427,14 @@ const SchoolDashboard = () => {
         endDate: cohortForm.endDate,
         description: cohortForm.description,
         status: cohortForm.status,
+        sharedCatalog: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
       await addDoc(collection(db, `users/${ownerId}/cohorts`), cohortPayload);
 
-      await loadManagedUsers(userRole, user?.uid, managedUsers.map(u => u.id));
+      await reloadData();
       setAddCohortModal(false);
       showAlert('Cohort added successfully!');
       notifyCrud('created', 'cohort', cohortForm.name, { workspaceUserId: ownerId });
@@ -1268,7 +1460,7 @@ const SchoolDashboard = () => {
         updatedAt: serverTimestamp(),
       });
 
-      await loadManagedUsers(userRole, user?.uid, managedUsers.map(u => u.id));
+      await reloadData();
       setEditCohortModal(false);
       showAlert('Cohort updated successfully!');
       notifyCrud('updated', 'cohort', cohortForm.name, { workspaceUserId: selectedCohort.ownerId });
@@ -1312,7 +1504,7 @@ const SchoolDashboard = () => {
         });
       }
 
-      await loadManagedUsers(userRole, user?.uid, managedUsers.map(u => u.id));
+      await reloadData();
       setEditPaymentModal(false);
       showAlert('Payment updated successfully!');
       notifyCrud('updated', 'payment', selectedPayment.studentName || 'Payment', {
@@ -1385,7 +1577,7 @@ const SchoolDashboard = () => {
       setPaymentModal(false);
       setFormErrors({});
       
-      await loadManagedUsers(userRole, user?.uid, managedUsers.map(u => u.id));
+      await reloadData();
       showAlert(`Payment of ${formatMK(amount)} recorded successfully for ${selectedStudent.name}!`);
       notifyCrud('created', 'payment', selectedStudent.name, {
         amount,
@@ -1460,7 +1652,7 @@ const SchoolDashboard = () => {
         }
       }
 
-      await loadManagedUsers(userRole, user?.uid, managedUsers.map(u => u.id));
+      await reloadData();
       setDeleteConfirmModal(false);
       showAlert(`${itemToDelete.type.charAt(0).toUpperCase() + itemToDelete.type.slice(1)} deleted successfully!`);
       notifyCrud('deleted', itemToDelete.type, itemToDelete.name || itemToDelete.studentName || itemToDelete.type, {
@@ -1478,9 +1670,14 @@ const SchoolDashboard = () => {
   const viewCohortDetails = async (cohort) => {
     setSelectedCohort(cohort);
     setSelectedCohortDetails(cohort);
-    
-    const students = allStudents.filter(s => s.cohortId === cohort.id && s.ownerId === cohort.ownerId);
-    const courses = allCourses.filter(c => c.cohortId === cohort.id && c.ownerId === cohort.ownerId);
+
+    const baseStudents = allStudents.filter((s) => studentMatchesCohort(s, cohort, catalogOwnerId));
+    const students = hasActiveStudentFilters
+      ? baseStudents.filter((s) =>
+          filteredStudents.some((fs) => fs.id === s.id && fs.ownerId === s.ownerId),
+        )
+      : baseStudents;
+    const courses = allCourses.filter((c) => c.cohortId === cohort.id && c.ownerId === cohort.ownerId);
     
     const cohortPaymentIds = students.map(s => s.id);
     const payments = getAllPaymentsWithInitial.filter(p => 
@@ -1535,9 +1732,10 @@ const SchoolDashboard = () => {
   // PDF EXPORTS (Updated with Dashboard logic)
   // -------------------------------------------------
   const exportAllStudentsPDF = () => {
+    const studentsToExport = hasActiveStudentFilters ? filteredStudents : allStudents;
     try {
       downloadStudentsReport({
-        students: allStudents,
+        students: studentsToExport,
         courses: allCourses,
         cohorts: allCohorts,
         calcTotalDue,
@@ -1546,7 +1744,7 @@ const SchoolDashboard = () => {
         schoolName: userProfile?.schoolName || userProfile?.fullName || 'School Dashboard',
         managedUserCount: managedUsers.length,
       });
-      showAlert(`Exported all ${allStudents.length} students to PDF`);
+      showAlert(`Exported ${studentsToExport.length} student${studentsToExport.length !== 1 ? 's' : ''} to PDF`);
     } catch (error) {
       console.error('PDF Error:', error);
       showAlert('Failed to export students PDF', 'danger');
@@ -1643,7 +1841,6 @@ const SchoolDashboard = () => {
         payments={getAllPaymentsWithInitial}
         filteredPayments={filteredPayments}
         allStudents={allStudents}
-        allCourses={allCourses}
         paymentSearchQuery={paymentSearchQuery}
         setPaymentSearchQuery={setPaymentSearchQuery}
         paymentDateFilter={paymentDateFilter}
@@ -1744,7 +1941,7 @@ const SchoolDashboard = () => {
                   <div className="small">
                     Course: {formatMK(allCourses.find(c => c.id === selectedStudent.courseId && c.ownerId === selectedStudent.ownerId)?.fee || 0)} | 
                     Reg: {formatMK(selectedStudent.registrationFee || 0)} | 
-                    Training: {formatMK(selectedStudent.trainingFee || 0)} | 
+                    Training: {formatMK(getCourseFeeForStudent(selectedStudent, allCourses, catalogOwnerId))} |
                     Boarding: {formatMK(selectedStudent.boardingFee || 0)}
                   </div>
                   <div className="mt-1">
@@ -1837,7 +2034,7 @@ const SchoolDashboard = () => {
                   <div className="small">
                     Course: {formatMK(allCourses.find(c => c.id === selectedStudent.courseId && c.ownerId === selectedStudent.ownerId)?.fee || 0)} | 
                     Reg: {formatMK(selectedStudent.registrationFee || 0)} | 
-                    Training: {formatMK(selectedStudent.trainingFee || 0)} | 
+                    Training: {formatMK(getCourseFeeForStudent(selectedStudent, allCourses, catalogOwnerId))} |
                     Boarding: {formatMK(selectedStudent.boardingFee || 0)}
                   </div>
                   <div>
@@ -1948,6 +2145,18 @@ const SchoolDashboard = () => {
         </CModalHeader>
         <CModalBody>
           {selectedStudent && (
+            <>
+              <StudentEligibilityBanner
+                eligible={isEligibleForEquipmentAndCertificates(
+                  selectedStudent,
+                  allCohorts.find(
+                    (c) => c.id === selectedStudent.cohortId && c.ownerId === selectedStudent.ownerId,
+                  ),
+                  allCourses,
+                  catalogOwnerId,
+                )}
+                className="mb-3"
+              />
             <CRow>
               <CCol md={6}>
                 <CListGroup>
@@ -1987,9 +2196,21 @@ const SchoolDashboard = () => {
                   </CListGroupItem>
                   <CListGroupItem>
                     <strong>Status:</strong>
-                    <CBadge color={calcBalance(selectedStudent) > 0 ? 'warning' : 'success'} className="ms-2">
-                      {calcBalance(selectedStudent) > 0 ? 'Pending' : 'Paid'}
-                    </CBadge>
+                    <span className="ms-2">
+                      <StudentStatusBadge
+                        paid={calcBalance(selectedStudent) <= 0}
+                        eligible={isEligibleForEquipmentAndCertificates(
+                          selectedStudent,
+                          allCohorts.find(
+                            (c) =>
+                              c.id === selectedStudent.cohortId &&
+                              c.ownerId === selectedStudent.ownerId,
+                          ),
+                          allCourses,
+                          catalogOwnerId,
+                        )}
+                      />
+                    </span>
                   </CListGroupItem>
                 </CListGroup>
               </CCol>
@@ -2010,7 +2231,7 @@ const SchoolDashboard = () => {
                       </CCol>
                       <CCol md={3} className="text-center">
                         <div className="text-body-secondary">Training</div>
-                        <div className="fw-bold">{formatMK(selectedStudent.trainingFee || 0)}</div>
+                        <div className="fw-bold">{formatMK(getCourseFeeForStudent(selectedStudent, allCourses, catalogOwnerId))}</div>
                       </CCol>
                       <CCol md={3} className="text-center">
                         <div className="text-body-secondary">Boarding</div>
@@ -2037,6 +2258,7 @@ const SchoolDashboard = () => {
                 </CCard>
               </CCol>
             </CRow>
+            </>
           )}
         </CModalBody>
         <CModalFooter>
@@ -2117,30 +2339,43 @@ const SchoolDashboard = () => {
             </CCol>
             <CCol md={4}>
               <CFormLabel>Owner *</CFormLabel>
-              <CFormSelect
-                value={filterUser}
-                onChange={(e) => setFilterUser(e.target.value)}
-                disabled={!filterUser || !canCreate}
-              >
-                <option value="">Select Owner</option>
-                {managedUsers.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName || u.email} {u.id === user?.uid && '(You)'}
-                  </option>
-                ))}
-              </CFormSelect>
-              <div className="form-text">Select which user this student belongs to</div>
+              {userRole === 'teacher' ? (
+                <>
+                  <CFormInput
+                    value={userProfile?.fullName || user?.email || 'You'}
+                    disabled
+                  />
+                  <div className="form-text">Students are registered under your account</div>
+                </>
+              ) : (
+                <>
+                  <CFormSelect
+                    value={studentOwnerId}
+                    onChange={(e) => setStudentOwnerId(e.target.value)}
+                    disabled={!canCreate}
+                  >
+                    <option value="">Select team member</option>
+                    {studentOwnerOptions.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.fullName || u.email}
+                        {u.role ? ` (${u.role})` : ''}
+                      </option>
+                    ))}
+                  </CFormSelect>
+                  <div className="form-text">Assign this student to a coordinator on your team</div>
+                </>
+              )}
             </CCol>
             <CCol md={6}>
               <CFormLabel>Course *</CFormLabel>
               <CFormSelect
                 value={studentForm.courseId}
-                onChange={(e) => setStudentForm({ ...studentForm, courseId: e.target.value })}
+                onChange={(e) => setStudentForm((f) => applyCourseToStudentForm(e.target.value, f))}
                 invalid={!!formErrors.courseId}
                 disabled={!canCreate}
               >
                 <option value="">Select Course</option>
-                {allCourses.filter(c => !filterUser || c.ownerId === filterUser).map(c => (
+                {catalogCourses.map(c => (
                   <option key={c.id} value={c.id}>{c.name} - {formatMK(c.fee)}</option>
                 ))}
               </CFormSelect>
@@ -2155,7 +2390,7 @@ const SchoolDashboard = () => {
                 disabled={!canCreate}
               >
                 <option value="">Select Cohort</option>
-                {allCohorts.filter(c => !filterUser || c.ownerId === filterUser).map(c => (
+                {catalogCohorts.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </CFormSelect>
@@ -2177,15 +2412,12 @@ const SchoolDashboard = () => {
             <CCol md={3}>
               <CFormLabel>Training Fee (MWK)</CFormLabel>
               <CFormInput
-                type="number"
-                step="0.01"
-                value={studentForm.trainingFee}
-                onChange={(e) => setStudentForm({ ...studentForm, trainingFee: e.target.value })}
-                placeholder="0.00"
-                invalid={!!formErrors.trainingFee}
-                disabled={!canCreate}
+                value={formCourseFee != null ? formatMK(formCourseFee) : 'Select a course first'}
+                disabled
+                readOnly
+                className="bg-body-secondary"
               />
-              {formErrors.trainingFee && <div className="invalid-feedback">{formErrors.trainingFee}</div>}
+              <div className="form-text">Course fee from catalog (not editable)</div>
             </CCol>
             <CCol md={3}>
               <CFormLabel>Boarding Fee (MWK)</CFormLabel>
@@ -2315,12 +2547,12 @@ const SchoolDashboard = () => {
               <CFormLabel>Course *</CFormLabel>
               <CFormSelect
                 value={studentForm.courseId}
-                onChange={(e) => setStudentForm({ ...studentForm, courseId: e.target.value })}
+                onChange={(e) => setStudentForm((f) => applyCourseToStudentForm(e.target.value, f))}
                 invalid={!!formErrors.courseId}
                 disabled={!canEdit}
               >
                 <option value="">Select Course</option>
-                {allCourses.filter(c => c.ownerId === selectedStudent?.ownerId).map(c => (
+                {catalogCourses.map(c => (
                   <option key={c.id} value={c.id}>{c.name} - {formatMK(c.fee)}</option>
                 ))}
               </CFormSelect>
@@ -2335,7 +2567,7 @@ const SchoolDashboard = () => {
                 disabled={!canEdit}
               >
                 <option value="">Select Cohort</option>
-                {allCohorts.filter(c => c.ownerId === selectedStudent?.ownerId).map(c => (
+                {catalogCohorts.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </CFormSelect>
@@ -2357,15 +2589,12 @@ const SchoolDashboard = () => {
             <CCol md={3}>
               <CFormLabel>Training Fee (MWK)</CFormLabel>
               <CFormInput
-                type="number"
-                step="0.01"
-                value={studentForm.trainingFee}
-                onChange={(e) => setStudentForm({ ...studentForm, trainingFee: e.target.value })}
-                placeholder="0.00"
-                invalid={!!formErrors.trainingFee}
-                disabled={!canEdit}
+                value={formCourseFee != null ? formatMK(formCourseFee) : 'Select a course first'}
+                disabled
+                readOnly
+                className="bg-body-secondary"
               />
-              {formErrors.trainingFee && <div className="invalid-feedback">{formErrors.trainingFee}</div>}
+              <div className="form-text">Course fee from catalog (not editable)</div>
             </CCol>
             <CCol md={3}>
               <CFormLabel>Boarding Fee (MWK)</CFormLabel>
@@ -2483,32 +2712,41 @@ const SchoolDashboard = () => {
                 disabled={!canCreate}
               >
                 <option value="">Select Cohort (Optional)</option>
-                {allCohorts.filter(c => !filterUser || c.ownerId === filterUser).map(c => (
+                {catalogCohorts.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </CFormSelect>
             </CCol>
+            {userRole === 'super-admin' && (
             <CCol md={12}>
-              <CFormLabel>Owner *</CFormLabel>
+              <CFormLabel>School admin catalog *</CFormLabel>
               <CFormSelect
                 value={filterUser}
                 onChange={(e) => setFilterUser(e.target.value)}
-                disabled={!filterUser || !canCreate}
+                disabled={!canCreate}
               >
-                <option value="">Select Owner</option>
-                {managedUsers.map(u => (
+                <option value="">Select admin catalog</option>
+                {managedUsers.filter(u => u.role === 'admin' || u.role === 'super-admin').map(u => (
                   <option key={u.id} value={u.id}>
-                    {u.fullName || u.email} {u.id === user?.uid && '(You)'}
+                    {u.fullName || u.email}
                   </option>
                 ))}
               </CFormSelect>
-              <div className="form-text">Select which user this course belongs to</div>
+              <div className="form-text">Courses are stored in the selected admin&apos;s shared catalog.</div>
             </CCol>
+            )}
+            {canManageCatalog && userRole === 'admin' && (
+            <CCol md={12}>
+              <CAlert color="info" className="mb-0 py-2 small">
+                Added to your school catalog — coordinators pick from this list when enrolling students.
+              </CAlert>
+            </CCol>
+            )}
           </CRow>
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setAddCourseModal(false)}>Cancel</CButton>
-          {canCreate && (
+          {canManageCatalog && canCreate && (
             <CButton color="primary" onClick={handleAddCourse}>Add Course</CButton>
           )}
         </CModalFooter>
@@ -2590,7 +2828,7 @@ const SchoolDashboard = () => {
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setEditCourseModal(false)}>Cancel</CButton>
-          {canEdit && (
+          {canManageCatalog && canEdit && (
             <CButton color="primary" onClick={handleEditCourse}>Update Course</CButton>
           )}
         </CModalFooter>
@@ -2655,27 +2893,35 @@ const SchoolDashboard = () => {
                 <option value="completed">Completed</option>
               </CFormSelect>
             </CCol>
+            {userRole === 'super-admin' && (
             <CCol md={6}>
-              <CFormLabel>Owner *</CFormLabel>
+              <CFormLabel>School admin catalog *</CFormLabel>
               <CFormSelect
                 value={filterUser}
                 onChange={(e) => setFilterUser(e.target.value)}
-                disabled={!filterUser || !canCreate}
+                disabled={!canCreate}
               >
-                <option value="">Select Owner</option>
-                {managedUsers.map(u => (
+                <option value="">Select admin catalog</option>
+                {managedUsers.filter(u => u.role === 'admin' || u.role === 'super-admin').map(u => (
                   <option key={u.id} value={u.id}>
-                    {u.fullName || u.email} {u.id === user?.uid && '(You)'}
+                    {u.fullName || u.email}
                   </option>
                 ))}
               </CFormSelect>
-              <div className="form-text">Select which user this cohort belongs to</div>
             </CCol>
+            )}
+            {canManageCatalog && userRole === 'admin' && (
+            <CCol md={12}>
+              <CAlert color="info" className="mb-0 py-2 small">
+                Added to your school catalog — all coordinators share this cohort list.
+              </CAlert>
+            </CCol>
+            )}
           </CRow>
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setAddCohortModal(false)}>Cancel</CButton>
-          {canCreate && (
+          {canManageCatalog && canCreate && (
             <CButton color="primary" onClick={handleAddCohort}>Add Cohort</CButton>
           )}
         </CModalFooter>
@@ -2752,7 +2998,7 @@ const SchoolDashboard = () => {
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setEditCohortModal(false)}>Cancel</CButton>
-          {canEdit && (
+          {canManageCatalog && canEdit && (
             <CButton color="primary" onClick={handleEditCohort}>Update Cohort</CButton>
           )}
         </CModalFooter>
@@ -2772,7 +3018,7 @@ const SchoolDashboard = () => {
           <CInputGroup>
             <CInputGroupText><CIcon icon={cilSearch} /></CInputGroupText>
             <CFormInput 
-              placeholder="Search students, courses, cohorts, transaction IDs, or owners..." 
+              placeholder="Search students, courses, owners, IDs… (any word order)" 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
             />
@@ -2811,22 +3057,37 @@ const SchoolDashboard = () => {
       </CRow>
       )}
 
+      {activeSection !== 'cohortDetails' && hasActiveStudentFilters && (
+        <CAlert color="info" className="py-2 mb-3 sms-filter-summary">
+          Showing <strong>{filteredStudents.length}</strong> of{' '}
+          <strong>{filteredStudentsByDate.length}</strong> students in this {dateFilter.toLowerCase()} view
+          {displayCohorts.length !== filteredCohorts.length && (
+            <> · <strong>{displayCohorts.length}</strong> matching cohort{displayCohorts.length !== 1 ? 's' : ''}</>
+          )}
+          {displayCourses.length !== filteredCourses.length && (
+            <> · <strong>{displayCourses.length}</strong> matching course{displayCourses.length !== 1 ? 's' : ''}</>
+          )}
+        </CAlert>
+      )}
+
       {/* Action Buttons */}
       {activeSection !== 'cohortDetails' && (
       <div className="sms-action-bar">
         {canEdit && (
           <CButton color="primary" variant="outline" onClick={exportAllStudentsPDF}>
-            <CIcon icon={cilCloudDownload} className="me-1" /> Export All Students ({allStudents.length})
+            <CIcon icon={cilCloudDownload} className="me-1" /> Export Students ({hasActiveStudentFilters ? filteredStudents.length : allStudents.length})
           </CButton>
         )}
         <CButton color="success" onClick={openAllPaymentsModal}>
           <CIcon icon={cilList} className="me-1" /> Payment Audit ({getAllPaymentsWithInitial.length})
         </CButton>
         {canCreate && (
+          <CButton color="primary" onClick={() => openAddStudent()}>
+            <CIcon icon={cilPlus} className="me-1" /> Add Student
+          </CButton>
+        )}
+        {canManageCatalog && canCreate && (
           <>
-            <CButton color="primary" onClick={() => openAddStudent()}>
-              <CIcon icon={cilPlus} className="me-1" /> Add Student
-            </CButton>
             <CButton color="primary" onClick={() => openAddCourse()}>
               <CIcon icon={cilPlus} className="me-1" /> Add Course
             </CButton>
@@ -2840,6 +3101,12 @@ const SchoolDashboard = () => {
 
       {activeSection !== 'cohortDetails' && (
         <DailyMomentum className="mb-3" />
+      )}
+
+      {userRole === 'teacher' && (
+        <CAlert color="info" className="mb-3">
+          Courses and cohorts are set by your school admin. Use the shared catalog when enrolling students — you cannot create duplicate programmes.
+        </CAlert>
       )}
 
       {/* Navigation Tabs */}
@@ -2859,7 +3126,7 @@ const SchoolDashboard = () => {
             onClick={() => setActiveSection('cohorts')}
           >
             <CIcon icon={cilCalendar} className="me-2" />
-            Cohorts ({allCohorts.length})
+            Cohorts ({hasActiveStudentFilters ? displayCohorts.length : allCohorts.length})
           </CNavLink>
         </CNavItem>
         <CNavItem>
@@ -2868,7 +3135,7 @@ const SchoolDashboard = () => {
             onClick={() => setActiveSection('courses')}
           >
             <CIcon icon={cilBook} className="me-2" />
-            Courses ({allCourses.length})
+            Courses ({hasActiveStudentFilters ? displayCourses.length : allCourses.length})
           </CNavLink>
         </CNavItem>
         {activeSection === 'cohortDetails' && selectedCohortDetails && (
@@ -2886,39 +3153,33 @@ const SchoolDashboard = () => {
         <>
           <SectionGuide section="overview" />
           <SchoolOverviewPanel
-            userRole={userRole}
-          canCreate={canCreate}
-          canEdit={canEdit}
-          canDelete={canDelete}
-          dateFilter={dateFilter}
-          setDateFilter={setDateFilter}
-          totalCollected={totalCollected}
-          totalBalance={totalBalance}
-          totalDue={totalDue}
-          filteredStudents={filteredStudents}
-          allCohorts={allCohorts}
-          allStudents={allStudents}
-          allCourses={allCourses}
-          getAllPaymentsWithInitial={getAllPaymentsWithInitial}
-          userStatistics={userStatistics}
-          getOwnerBadgeColor={getOwnerBadgeColor}
-          getCohortStatus={getCohortStatus}
-          openUserStatsModal={openUserStatsModal}
-          exportAllStudentsPDF={exportAllStudentsPDF}
-          managedUsersCount={managedUsers.length}
-          currentUserId={user?.uid}
-        />
+            canEdit={canEdit}
+            dateFilter={dateFilter}
+            setDateFilter={setDateFilter}
+            exportAllStudentsPDF={exportAllStudentsPDF}
+            teamFinance={teamFinance}
+            filteredStudentCount={filteredStudents.length}
+            totalStudentCount={filteredStudentsByDate.length}
+            hasActiveStudentFilters={hasActiveStudentFilters}
+            allCohorts={displayCohorts}
+            allCourses={displayCourses}
+            catalogOwnerId={catalogOwnerId}
+            paymentCount={getAllPaymentsWithInitial.length}
+          />
         </>
       )}
 
       {activeSection === 'cohorts' && (
         <CohortsPanel
-          filteredCohorts={filteredCohorts}
+          filteredCohorts={displayCohorts}
           allCourses={allCourses}
-          allStudents={allStudents}
-          canCreate={canCreate}
+          allStudents={filteredStudents}
+          filtersActive={hasActiveStudentFilters}
+          catalogOwnerId={catalogOwnerId}
+          canManageCatalog={canManageCatalog}
           canEdit={canEdit}
           canDelete={canDelete}
+          studentMatchesCohort={(s, c) => studentMatchesCohort(s, c, catalogOwnerId)}
           getCohortStatus={getCohortStatus}
           getCohortProgress={getCohortProgress}
           getCohortDuration={getCohortDuration}
@@ -2964,11 +3225,14 @@ const SchoolDashboard = () => {
 
       {activeSection === 'courses' && (
         <CoursesPanel
-          filteredCourses={filteredCourses}
-          allStudents={allStudents}
-          canCreate={canCreate}
+          filteredCourses={displayCourses}
+          allStudents={filteredStudents}
+          filtersActive={hasActiveStudentFilters}
+          catalogOwnerId={catalogOwnerId}
+          canManageCatalog={canManageCatalog}
           canEdit={canEdit}
           canDelete={canDelete}
+          studentMatchesCourse={(s, c) => studentMatchesCourse(s, c, catalogOwnerId)}
           formatMK={formatMK}
           getOwnerBadgeColor={getOwnerBadgeColor}
           openEditCourse={openEditCourse}

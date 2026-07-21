@@ -36,10 +36,8 @@ import { collection, doc, getDoc, getDocs } from 'firebase/firestore'
 import { auth, db } from '../../firebase'
 import {
   APPROVAL,
-  approvalLabel,
   getUserPermissions,
   isUserApproved,
-  permissionsSummary,
 } from '../../utils/permissions'
 import {
   ADMIN_SUBSCRIPTION_AMOUNT,
@@ -49,7 +47,7 @@ import {
   toJsDate,
 } from '../../utils/subscription'
 import PwaInstallBanner from '../../components/PwaInstallBanner'
-import DailyMomentum from '../../components/engagement/DailyMomentum'
+import AdminTeamHub from '../../components/dashboard/AdminTeamHub'
 import AnimatedNumber from '../../components/engagement/AnimatedNumber'
 
 const toDate = (value) => toJsDate(value)
@@ -348,8 +346,6 @@ const ControlCenter = () => {
 
       <PwaInstallBanner />
 
-      <DailyMomentum />
-
       {isAdmin && metrics && !metrics.subscriptionActive && (
         <CAlert color="warning" className="mb-4">
           <CIcon icon={cilWarning} className="me-2" />
@@ -358,6 +354,10 @@ const ControlCenter = () => {
             Subscribe now
           </CButton>
         </CAlert>
+      )}
+
+      {isAdmin && metrics && (
+        <AdminTeamHub teamUsers={metrics.team} catalogOwnerId={profile?.id} />
       )}
 
       {isSuperAdmin && metrics?.pendingCount > 0 && (
@@ -472,43 +472,10 @@ const ControlCenter = () => {
                   </CListGroupItem>
                 </CListGroup>
               ) : (
-                <>
-                  {metrics?.team?.length === 0 ? (
-                    <CAlert color="info" className="mb-0">
-                      No team members yet. Add users from <strong>My Users</strong> — they will need super-admin
-                      approval before signing in.
-                    </CAlert>
-                  ) : (
-                    <div className="d-flex flex-column gap-2">
-                      {metrics.team.slice(0, 6).map((u) => {
-                        const approval = approvalLabel(u.approvalStatus || APPROVAL.APPROVED)
-                        return (
-                          <div
-                            key={u.id}
-                            className="sms-control-team-row d-flex justify-content-between align-items-center"
-                          >
-                            <div>
-                              <strong>{u.fullName || u.email}</strong>
-                              <div className="small text-muted">{u.role}</div>
-                            </div>
-                            <div className="d-flex gap-1 flex-wrap justify-content-end">
-                              {u.approvalStatus === APPROVAL.PENDING ? (
-                                <CBadge color="warning">Pending approval</CBadge>
-                              ) : (
-                                <CBadge color={approval.color}>{permissionsSummary(u)}</CBadge>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                      {metrics.team.length > 6 && (
-                        <CButton color="link" size="sm" onClick={() => navigate('/admin/users')}>
-                          View all {metrics.team.length} members
-                        </CButton>
-                      )}
-                    </div>
-                  )}
-                </>
+                <CAlert color="light" className="mb-0 border">
+                  Use the team cards above to review each member&apos;s cohorts, outstanding balances, and payments.
+                  For day-to-day edits, open <strong>School Overview</strong>.
+                </CAlert>
               )}
             </CCardBody>
           </CCard>

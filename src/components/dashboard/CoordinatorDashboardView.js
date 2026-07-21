@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   CAlert,
   CBadge,
@@ -42,11 +42,19 @@ import {
   cilOptions,
   cilPencil,
   cilTrash,
+  cilArrowLeft,
+  cilArrowRight,
+  cilUser,
 } from '@coreui/icons'
 import { format, parseISO } from 'date-fns'
 import MainChart from '../../views/dashboard/MainChart'
 import SectionGuide from './SectionGuide'
+import OtherCohortsCard from './OtherCohortsCard'
+import CohortDetailPanel from './CohortDetailPanel'
+import { canModifyLegacyCatalogItem, studentMatchesCohort, isCohortComplete } from '../../utils/schoolCatalog'
+import { partitionCohortsForDisplay } from '../../utils/cohortDisplay'
 import DailyMomentum from '../engagement/DailyMomentum'
+import { StudentStatusBadge } from './StudentEligibility'
 
 const formatMKShort = (amount) => {
   if (amount >= 1_000_000) return `MK ${(amount / 1_000_000).toFixed(1)}M`
@@ -69,6 +77,7 @@ const StudentCard = ({
   openPaymentModal,
   openPaymentHistory,
   generateDetailedReceipt,
+  openStudentDetailModal,
   openEditStudent,
   openDeleteConfirm,
   canCreate,
@@ -76,15 +85,21 @@ const StudentCard = ({
   canDelete,
 }) => {
   const paid = balance <= 0
+  const eligible = paid && cohort && isCohortComplete(cohort)
+  const cardClass = eligible
+    ? 'sms-student-card--eligible'
+    : paid
+      ? 'sms-student-card--paid'
+      : 'sms-student-card--pending'
   return (
     <CCol md={6} xl={4} key={student.id}>
-      <div className={`sms-student-card ${paid ? 'sms-student-card--paid' : 'sms-student-card--pending'}`}>
+      <div className={`sms-student-card ${cardClass}`}>
         <div className="sms-student-card-head">
           <div>
             <div className="sms-student-name">{student.name}</div>
             <div className="sms-student-meta">{student.phoneNumber || 'No phone'}</div>
           </div>
-          <CBadge color={paid ? 'success' : 'warning'}>{paid ? 'Paid' : 'Balance due'}</CBadge>
+          <StudentStatusBadge paid={paid} eligible={eligible} />
         </div>
         <div className="sms-student-course">
           {course?.name || 'No course'} · {cohort?.name || 'No cohort'}
@@ -119,6 +134,9 @@ const StudentCard = ({
             <CIcon icon={cilOptions} className="me-1" /> Actions
           </CDropdownToggle>
           <CDropdownMenu>
+            <CDropdownItem onClick={() => openStudentDetailModal(student)}>
+              <CIcon icon={cilUser} className="me-2" /> View details
+            </CDropdownItem>
             {canCreate && (
               <CDropdownItem onClick={() => openPaymentModal(student)}>
                 <CIcon icon={cilMoney} className="me-2" /> Record payment
@@ -170,6 +188,7 @@ const CoordinatorDashboardView = ({
   filteredCohorts,
   filteredCourses,
   filteredStudents,
+  allStudents = filteredStudents,
   courses,
   cohorts,
   totalCollected,
@@ -181,10 +200,13 @@ const CoordinatorDashboardView = ({
   getCohortDuration,
   calcBalance,
   calcTotalDue,
+  resolveCourse,
+  resolveCohort,
   formatMK,
   getPaymentMethodColor,
   getPaymentTypeColor,
   openStudentModal,
+  openStudentDetailModal,
   openEditStudent,
   openCourseModal,
   openEditCourse,
@@ -192,6 +214,10 @@ const CoordinatorDashboardView = ({
   openEditCohort,
   openDeleteConfirm,
   openAllPaymentsModal,
+  canManageCatalog = false,
+  catalogOwnerId = null,
+  catalogLoading = false,
+  workspaceOwnerId = null,
   exportMyStatementPDF,
   openPaymentModal,
   openPaymentHistory,
@@ -202,6 +228,66 @@ const CoordinatorDashboardView = ({
   accessSummary = '',
   permissionBlock = '',
 }) => {
+  const [showOtherCohorts, setShowOtherCohorts] = useState(false)
+  const [selectedCohort, setSelectedCohort] = useState(null)
+
+  useEffect(() => {
+    if (activeSection !== 'cohorts') {
+      setSelectedCohort(null)
+      setShowOtherCohorts(false)
+    }
+  }, [activeSection])
+
+  const { primary: primaryCohorts, other: otherCohorts } = useMemo(
+    () => partitionCohortsForDisplay(filteredCohorts, getCohortStatus, { activeOnly: true }),
+    [filteredCohorts, getCohortStatus],
+  )
+
+  const visibleCohorts = showOtherCohorts ? otherCohorts : primaryCohorts
+
+  const cohortStudents = useMemo(() => {
+    if (!selectedCohort) return []
+    return allStudents.filter((s) => studentMatchesCohort(s, selectedCohort, catalogOwnerId))
+  }, [selectedCohort, allStudents, catalogOwnerId])
+
+  const cohortCourses = useMemo(() => {
+    if (!selectedCohort) return []
+    return courses.filter((c) => c.cohortId === selectedCohort.id)
+  }, [selectedCohort, courses])
+
+  const cohortPayments = useMemo(() => {
+    if (!selectedCohort || !cohortStudents.length) return []
+    const studentKeys = new Set(cohortStudents.map((s) => s.id))
+    return getAllPaymentsWithInitial.filter((p) => studentKeys.has(p.studentId))
+  }, [selectedCohort, cohortStudents, getAllPaymentsWithInitial])
+
+  const cohortStats = useMemo(() => {
+    if (!selectedCohort) return null
+    const totalCollected = cohortStudents.reduce((sum, s) => sum + (s.amountPaid || 0), 0)
+    const totalDue = cohortStudents.reduce((sum, s) => sum + calcTotalDue(s), 0)
+    const paidStudents = cohortStudents.filter((s) => calcBalance(s) <= 0).length
+    return {
+      totalStudents: cohortStudents.length,
+      totalCourses: cohortCourses.length,
+      totalPayments: cohortPayments.length,
+      totalCollected,
+      totalDue,
+      totalBalance: totalDue - totalCollected,
+      paidStudents,
+      pendingStudents: cohortStudents.length - paidStudents,
+      completionRate: cohortStudents.length > 0 ? Math.round((paidStudents / cohortStudents.length) * 100) : 0,
+    }
+  }, [selectedCohort, cohortStudents, cohortCourses, cohortPayments, calcTotalDue, calcBalance])
+
+  const openCohortWorkspace = (cohort) => {
+    setSelectedCohort(cohort)
+    setShowOtherCohorts(false)
+  }
+
+  const backToCohortList = () => setSelectedCohort(null)
+
+  const getOwnerBadgeColor = () => 'info'
+
   const totalDue = filteredStudents.reduce((sum, s) => sum + calcTotalDue(s), 0)
   const collectionRate = totalDue > 0 ? Math.min(100, (totalCollected / totalDue) * 100) : 0
   const paidCount = filteredStudents.filter((s) => calcBalance(s) <= 0).length
@@ -243,8 +329,8 @@ const CoordinatorDashboardView = ({
     ) : (
       <CRow className="g-3">
         {list.map((s) => {
-          const course = courses.find((c) => c.id === s.courseId)
-          const cohort = cohorts.find((c) => c.id === s.cohortId)
+          const course = resolveCourse ? resolveCourse(s) : courses.find((c) => c.id === s.courseId)
+          const cohort = resolveCohort ? resolveCohort(s) : cohorts.find((c) => c.id === s.cohortId)
           const balance = calcBalance(s)
           const paymentCount = getAllPaymentsWithInitial.filter((p) => p.studentId === s.id).length
           return (
@@ -260,6 +346,7 @@ const CoordinatorDashboardView = ({
               openPaymentModal={openPaymentModal}
               openPaymentHistory={openPaymentHistory}
               generateDetailedReceipt={generateDetailedReceipt}
+              openStudentDetailModal={openStudentDetailModal}
               openEditStudent={openEditStudent}
               openDeleteConfirm={openDeleteConfirm}
               canCreate={canCreate}
@@ -280,7 +367,7 @@ const CoordinatorDashboardView = ({
             My Workspace
           </h2>
           <p className="text-muted mb-0">
-            Manage your cohorts, students, courses, and payments — all in one place.
+            Open a cohort to manage its students and courses — everything stays grouped by intake.
           </p>
           {accessSummary && accessSummary !== 'Full access' && (
             <CBadge color="info" className="mt-2">
@@ -291,6 +378,19 @@ const CoordinatorDashboardView = ({
       </div>
 
       <DailyMomentum />
+
+      {!canManageCatalog && (
+        <CAlert color="info" className="mb-4">
+          Courses and cohorts are managed by your school admin. Select from the shared catalog when adding students.
+        </CAlert>
+      )}
+
+      {!canManageCatalog && !catalogLoading && !catalogOwnerId && (
+        <CAlert color="warning" className="mb-4">
+          Your account is not linked to a school admin yet. Ask your admin to add you under{' '}
+          <strong>My Users</strong> so their courses and cohorts appear here.
+        </CAlert>
+      )}
 
       {!canCreate && !canEdit && !canDelete && (
         <CAlert color="warning" className="mb-4">
@@ -332,7 +432,7 @@ const CoordinatorDashboardView = ({
               <div className="sms-search">
                 <CIcon icon={cilSearch} className="sms-search-icon" />
                 <CFormInput
-                  placeholder="Search students, courses, cohorts..."
+                  placeholder="Search students, courses, cohorts… (any word order)"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="sms-search-input"
@@ -375,6 +475,8 @@ const CoordinatorDashboardView = ({
         >
           <CIcon icon={cilPlus} className="me-1" /> Add Student
         </CButton>
+        {canManageCatalog && (
+          <>
         <CButton
           color="primary"
           variant="outline"
@@ -393,6 +495,8 @@ const CoordinatorDashboardView = ({
         >
           <CIcon icon={cilPlus} className="me-1" /> Add Cohort
         </CButton>
+          </>
+        )}
         <CButton color="success" variant="outline" onClick={openAllPaymentsModal}>
           <CIcon icon={cilList} className="me-1" /> Payment Audit ({getAllPaymentsWithInitial.length})
         </CButton>
@@ -402,8 +506,6 @@ const CoordinatorDashboardView = ({
         {[
           { id: 'overview', label: 'Overview', icon: cilChart },
           { id: 'cohorts', label: `Cohorts (${filteredCohorts.length})`, icon: cilCalendar },
-          { id: 'students', label: `Students (${filteredStudents.length})`, icon: cilPeople },
-          { id: 'courses', label: `Courses (${filteredCourses.length})`, icon: cilBook },
           { id: 'payments', label: 'Payments', icon: cilMoney },
         ].map((tab) => (
           <CNavItem key={tab.id}>
@@ -469,27 +571,93 @@ const CoordinatorDashboardView = ({
         </>
       )}
 
-      {activeSection === 'cohorts' && (
+      {activeSection === 'cohorts' && selectedCohort && cohortStats && (
+        <CohortDetailPanel
+          selectedCohortDetails={selectedCohort}
+          cohortStats={cohortStats}
+          cohortStudents={cohortStudents}
+          cohortCourses={cohortCourses}
+          cohortPayments={cohortPayments}
+          allCourses={courses}
+          getAllPaymentsWithInitial={getAllPaymentsWithInitial}
+          canCreate={canCreate}
+          canEdit={canEdit}
+          canDelete={canDelete}
+          formatMK={formatMK}
+          calcBalance={calcBalance}
+          getCohortStatus={getCohortStatus}
+          getCohortProgress={getCohortProgress}
+          getCohortDuration={getCohortDuration}
+          getOwnerBadgeColor={getOwnerBadgeColor}
+          getPaymentMethodColor={getPaymentMethodColor}
+          getPaymentTypeColor={getPaymentTypeColor}
+          backToCohorts={backToCohortList}
+          openStudentDetailModal={openStudentDetailModal}
+          openEditStudent={openEditStudent}
+          openPaymentModal={openPaymentModal}
+          openPaymentHistory={openPaymentHistory}
+          generateStudentReceipt={generateDetailedReceipt}
+          openEditCourse={openEditCourse}
+          openDeleteConfirm={openDeleteConfirm}
+          openAllPaymentsModal={openAllPaymentsModal}
+        />
+      )}
+
+      {activeSection === 'cohorts' && !selectedCohort && (
         <>
           <SectionGuide section="cohorts" />
           <div className="sms-panel-toolbar mb-3">
             <div>
-              <h5 className="mb-0 fw-bold">Academic Cohorts</h5>
-              <small className="text-muted">{filteredCohorts.length} intake periods</small>
+              <h5 className="mb-0 fw-bold">{showOtherCohorts ? 'Other cohorts' : 'Active cohorts'}</h5>
+              <small className="text-muted">
+                {showOtherCohorts
+                  ? `${otherCohorts.length} completed or non-active intake${otherCohorts.length !== 1 ? 's' : ''}`
+                  : `${primaryCohorts.length} active · ${filteredCohorts.length} total`}
+              </small>
             </div>
+            {showOtherCohorts && (
+              <CButton color="secondary" variant="outline" size="sm" onClick={() => setShowOtherCohorts(false)}>
+                <CIcon icon={cilArrowLeft} className="me-1" />
+                Back
+              </CButton>
+            )}
           </div>
           {filteredCohorts.length === 0 ? (
-            <CAlert color="info">No cohorts yet. Click + Add Cohort to create your first intake.</CAlert>
+            catalogLoading ? (
+              <CAlert color="light">Loading cohorts from your school catalog…</CAlert>
+            ) : !catalogOwnerId ? (
+              <CAlert color="warning">Link your account to a school admin to see shared cohorts.</CAlert>
+            ) : (
+              <CAlert color="info">No cohorts in the school catalog yet. Ask your admin to create cohorts.</CAlert>
+            )
+          ) : visibleCohorts.length === 0 && !showOtherCohorts ? (
+            <CAlert color="info">
+              No active cohorts right now.{' '}
+              {otherCohorts.length > 0 && (
+                <CButton color="link" className="p-0 align-baseline" onClick={() => setShowOtherCohorts(true)}>
+                  View {otherCohorts.length} other cohort{otherCohorts.length !== 1 ? 's' : ''}
+                </CButton>
+              )}
+            </CAlert>
           ) : (
             <CRow className="g-3">
-              {filteredCohorts.map((c) => {
+              {visibleCohorts.map((c) => {
                 const status = getCohortStatus(c)
                 const cohortCourses = courses.filter((course) => course.cohortId === c.id)
-                const cohortStudents = filteredStudents.filter((s) => s.cohortId === c.id)
+                const cohortStudents = allStudents.filter((s) =>
+                  studentMatchesCohort(s, c, catalogOwnerId),
+                )
                 const progress = getCohortProgress(c)
+                const canModify = canManageCatalog || canModifyLegacyCatalogItem(c, workspaceOwnerId, catalogOwnerId)
                 return (
                   <CCol md={6} xl={4} key={c.id}>
-                    <div className={`sms-cohort-card sms-cohort-card--${status.color}`}>
+                    <div
+                      className={`sms-cohort-card sms-cohort-card--${status.color}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openCohortWorkspace(c)}
+                      onKeyDown={(e) => e.key === 'Enter' && openCohortWorkspace(c)}
+                    >
                       <div className="sms-cohort-card-top">
                         <div>
                           <div className="sms-cohort-name">{c.name}</div>
@@ -516,7 +684,18 @@ const CoordinatorDashboardView = ({
                           <span className="sms-cohort-metric-lbl">Courses</span>
                         </div>
                       </div>
-                      {(canEdit || canDelete) && (
+                      <CButton
+                        color="primary"
+                        className="w-100 mt-3 sms-btn-glow"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openCohortWorkspace(c)
+                        }}
+                      >
+                        Open workspace
+                        <CIcon icon={cilArrowRight} className="ms-1" />
+                      </CButton>
+                      {canModify && (canEdit || canDelete) && (
                         <div className="d-flex gap-2 mt-3 pt-3 border-top border-secondary-subtle">
                           {canEdit && (
                             <CButton
@@ -524,7 +703,10 @@ const CoordinatorDashboardView = ({
                               color="primary"
                               variant="outline"
                               className="flex-grow-1"
-                              onClick={() => openEditCohort(c)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openEditCohort(c)
+                              }}
                             >
                               <CIcon icon={cilPencil} className="me-1" /> Edit
                             </CButton>
@@ -535,7 +717,10 @@ const CoordinatorDashboardView = ({
                               color="danger"
                               variant="outline"
                               className="flex-grow-1"
-                              onClick={() => openDeleteConfirm(c, 'cohort')}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openDeleteConfirm(c, 'cohort')
+                              }}
                             >
                               <CIcon icon={cilTrash} className="me-1" /> Delete
                             </CButton>
@@ -546,106 +731,11 @@ const CoordinatorDashboardView = ({
                   </CCol>
                 )
               })}
-            </CRow>
-          )}
-        </>
-      )}
-
-      {activeSection === 'students' && (
-        <>
-          <SectionGuide section="coordinatorStudents" />
-          {filteredStudents.length === 0 ? (
-            <CAlert color="info">No students yet. Add your first student to get started.</CAlert>
-          ) : (() => {
-            const boarding = filteredStudents.filter((s) => (s.boardingFee || 0) > 0)
-            const dayScholars = filteredStudents.filter((s) => (s.boardingFee || 0) === 0)
-            return (
-              <>
-                {boarding.length > 0 && (
-                  <div className="mb-4">
-                    <h6 className="fw-bold mb-3">
-                      <CIcon icon={cilHome} className="me-2 text-info" />
-                      Boarding Students ({boarding.length})
-                    </h6>
-                    {renderStudents(boarding, 'No boarding students.')}
-                  </div>
-                )}
-                {dayScholars.length > 0 && (
-                  <div>
-                    <h6 className="fw-bold mb-3">
-                      <CIcon icon={cilPeople} className="me-2" />
-                      {boarding.length > 0 ? `Day Scholars (${dayScholars.length})` : `All Students (${dayScholars.length})`}
-                    </h6>
-                    {renderStudents(dayScholars, 'No students.')}
-                  </div>
-                )}
-              </>
-            )
-          })()}
-        </>
-      )}
-
-      {activeSection === 'courses' && (
-        <>
-          <SectionGuide section="courses" />
-          <div className="sms-panel-toolbar mb-3">
-            <div>
-              <h5 className="mb-0 fw-bold">Courses</h5>
-              <small className="text-muted">{filteredCourses.length} programmes</small>
-            </div>
-          </div>
-          {filteredCourses.length === 0 ? (
-            <CAlert color="info">No courses yet. Add a course and link it to a cohort.</CAlert>
-          ) : (
-            <CRow className="g-3">
-              {filteredCourses.map((c) => {
-                const cohort = cohorts.find((coh) => coh.id === c.cohortId)
-                const enrolled = filteredStudents.filter((s) => s.courseId === c.id).length
-                return (
-                  <CCol md={6} xl={4} key={c.id}>
-                    <div className="sms-course-card">
-                      <div className="sms-course-card-head">
-                        <div className="sms-course-name">{c.name}</div>
-                        <CBadge color={c.type === 'weekly' ? 'info' : 'warning'}>{c.type}</CBadge>
-                      </div>
-                      <div className="sms-course-fee">{formatMK(c.fee)}</div>
-                      <div className="sms-course-meta">
-                        <span>{c.duration}</span>
-                        <span>{enrolled} enrolled</span>
-                      </div>
-                      <CBadge color="secondary" className="mb-0">
-                        {cohort?.name || 'No cohort'}
-                      </CBadge>
-                      {(canEdit || canDelete) && (
-                        <div className="d-flex gap-2 mt-3 pt-3 border-top border-secondary-subtle">
-                          {canEdit && (
-                            <CButton
-                              size="sm"
-                              color="primary"
-                              variant="outline"
-                              className="flex-grow-1"
-                              onClick={() => openEditCourse(c)}
-                            >
-                              <CIcon icon={cilPencil} className="me-1" /> Edit
-                            </CButton>
-                          )}
-                          {canDelete && (
-                            <CButton
-                              size="sm"
-                              color="danger"
-                              variant="outline"
-                              className="flex-grow-1"
-                              onClick={() => openDeleteConfirm(c, 'course')}
-                            >
-                              <CIcon icon={cilTrash} className="me-1" /> Delete
-                            </CButton>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </CCol>
-                )
-              })}
+              {!showOtherCohorts && otherCohorts.length > 0 && (
+                <CCol md={6} xl={4}>
+                  <OtherCohortsCard count={otherCohorts.length} onClick={() => setShowOtherCohorts(true)} />
+                </CCol>
+              )}
             </CRow>
           )}
         </>

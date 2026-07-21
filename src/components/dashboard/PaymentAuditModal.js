@@ -6,28 +6,31 @@ import {
   CModalBody,
   CModalFooter,
   CButton,
-  CRow,
+  CButtonGroup,
   CCol,
   CFormInput,
   CFormSelect,
   CInputGroup,
   CInputGroupText,
-  CNav,
-  CNavItem,
-  CNavLink,
-  CProgress,
+  CRow,
+  CTable,
+  CTableBody,
+  CTableDataCell,
+  CTableHead,
+  CTableHeaderCell,
+  CTableRow,
   CBadge,
   CAlert,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
-  cilList,
-  cilSearch,
-  cilPeople,
-  cilMoney,
+  cilChart,
   cilCheckCircle,
-  cilWarning,
   cilCloudDownload,
+  cilList,
+  cilPeople,
+  cilSearch,
+  cilWarning,
 } from '@coreui/icons'
 import { format } from 'date-fns'
 import SmartPagination from '../ui/SmartPagination'
@@ -37,7 +40,7 @@ const formatMK = (amount) =>
     style: 'currency',
     currency: 'MWK',
     minimumFractionDigits: 0,
-  }).format(amount)
+  }).format(amount || 0)
 
 const PaymentAuditModal = ({
   visible,
@@ -45,7 +48,6 @@ const PaymentAuditModal = ({
   payments,
   filteredPayments,
   allStudents,
-  allCourses,
   paymentSearchQuery,
   setPaymentSearchQuery,
   paymentDateFilter,
@@ -57,288 +59,348 @@ const PaymentAuditModal = ({
   calcBalance,
   onExportPdf,
 }) => {
-  const [tab, setTab] = useState('payments')
+  const [viewMode, setViewMode] = useState('all')
+  const [selectedOwnerId, setSelectedOwnerId] = useState('')
   const [page, setPage] = useState(1)
-  const [balancePage, setBalancePage] = useState(1)
-  const perPage = 8
+  const perPage = 10
 
-  const totals = useMemo(
-    () => ({
-      count: payments.length,
-      amount: payments.reduce((s, p) => s + (p.amount || 0), 0),
-      initial: payments.filter((p) => p.isInitialPayment).length,
-      additional: payments.filter((p) => !p.isInitialPayment).length,
-    }),
-    [payments],
-  )
+  const memberSummaries = useMemo(() => {
+    const map = new Map()
 
-  const studentBalances = useMemo(() => {
-    return allStudents
-      .map((s) => {
-        const due = calcTotalDue(s)
-        const paid = s.amountPaid ?? 0
-        const balance = calcBalance(s)
-        const rate = due > 0 ? Math.min(100, (paid / due) * 100) : 0
-        return {
-          ...s,
-          totalDue: due,
-          paid,
-          balance,
-          rate,
-          status: balance <= 0 ? 'paid' : paid > 0 ? 'partial' : 'unpaid',
-        }
+    const ensure = (ownerId, ownerName, ownerType) => {
+      if (!map.has(ownerId)) {
+        map.set(ownerId, {
+          ownerId,
+          ownerName: ownerName || 'Unknown',
+          ownerType,
+          paymentCount: 0,
+          totalCollected: 0,
+          studentCount: 0,
+          totalDue: 0,
+          outstanding: 0,
+          pendingStudents: 0,
+        })
+      }
+      return map.get(ownerId)
+    }
+
+    payments.forEach((p) => {
+      const row = ensure(p.ownerId, p.ownerName, p.ownerType)
+      row.paymentCount += 1
+      row.totalCollected += p.amount || 0
+    })
+
+    allStudents.forEach((s) => {
+      const row = ensure(s.ownerId, s.ownerName, s.ownerType)
+      row.studentCount += 1
+      const due = calcTotalDue(s)
+      const balance = calcBalance(s)
+      row.totalDue += due
+      if (balance > 0) {
+        row.outstanding += balance
+        row.pendingStudents += 1
+      }
+    })
+
+    return [...map.values()].sort((a, b) => b.totalCollected - a.totalCollected)
+  }, [payments, allStudents, calcTotalDue, calcBalance])
+
+  const scopedPayments = useMemo(() => {
+    if (viewMode === 'member' && selectedOwnerId) {
+      return filteredPayments.filter((p) => p.ownerId === selectedOwnerId)
+    }
+    return filteredPayments
+  }, [filteredPayments, viewMode, selectedOwnerId])
+
+  const scopeStats = useMemo(() => {
+    const list = scopedPayments
+    const outstanding = allStudents
+      .filter((s) => {
+        if (viewMode === 'member' && selectedOwnerId && s.ownerId !== selectedOwnerId) return false
+        return calcBalance(s) > 0
       })
-      .sort((a, b) => b.balance - a.balance)
-  }, [allStudents, calcTotalDue, calcBalance])
+      .reduce((sum, s) => sum + calcBalance(s), 0)
 
-  const filteredBalances = useMemo(() => {
-    const q = paymentSearchQuery.trim().toLowerCase()
-    if (!q) return studentBalances
-    return studentBalances.filter(
-      (s) =>
-        s.name?.toLowerCase().includes(q) ||
-        s.ownerName?.toLowerCase().includes(q),
-    )
-  }, [studentBalances, paymentSearchQuery])
+    const pendingStudents = allStudents.filter((s) => {
+      if (viewMode === 'member' && selectedOwnerId && s.ownerId !== selectedOwnerId) return false
+      return calcBalance(s) > 0
+    }).length
 
-  const totalPaymentPages = Math.ceil(filteredPayments.length / perPage)
-  const totalBalancePages = Math.ceil(filteredBalances.length / perPage)
+    return {
+      count: list.length,
+      amount: list.reduce((s, p) => s + (p.amount || 0), 0),
+      initial: list.filter((p) => p.isInitialPayment).length,
+      additional: list.filter((p) => !p.isInitialPayment).length,
+      outstanding,
+      pendingStudents,
+    }
+  }, [scopedPayments, allStudents, viewMode, selectedOwnerId, calcBalance])
 
-  const paginatedPayments = filteredPayments.slice((page - 1) * perPage, page * perPage)
-  const paginatedBalances = filteredBalances.slice(
-    (balancePage - 1) * perPage,
-    balancePage * perPage,
-  )
+  const totalPages = Math.ceil(scopedPayments.length / perPage) || 1
+  const paginatedPayments = scopedPayments.slice((page - 1) * perPage, page * perPage)
 
-  const paidCount = studentBalances.filter((s) => s.status === 'paid').length
-  const partialCount = studentBalances.filter((s) => s.status === 'partial').length
-  const unpaidCount = studentBalances.filter((s) => s.status === 'unpaid').length
+  const switchView = (mode) => {
+    setViewMode(mode)
+    setPage(1)
+    if (mode === 'member' && !selectedOwnerId && memberSummaries[0]) {
+      setSelectedOwnerId(memberSummaries[0].ownerId)
+    }
+  }
 
   return (
     <CModal size="xl" visible={visible} onClose={onClose} className="sms-audit-modal">
       <CModalHeader className="sms-modal-header">
         <CModalTitle>
           <CIcon icon={cilList} className="me-2" />
-          Payment & Balance Center
+          Payment analysis
         </CModalTitle>
       </CModalHeader>
       <CModalBody className="sms-modal-body">
-        <CNav variant="pills" className="sms-audit-tabs mb-4">
-          <CNavItem>
-            <CNavLink active={tab === 'payments'} onClick={() => { setTab('payments'); setPage(1) }}>
-              <CIcon icon={cilMoney} className="me-1" />
-              Payments ({filteredPayments.length})
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink active={tab === 'balances'} onClick={() => { setTab('balances'); setBalancePage(1) }}>
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <p className="text-muted small mb-0">
+            Start with all payments, then drill into a team member or compare coordinators.
+          </p>
+          <CButtonGroup size="sm">
+            <CButton
+              color={viewMode === 'all' ? 'primary' : 'secondary'}
+              variant={viewMode === 'all' ? undefined : 'outline'}
+              onClick={() => switchView('all')}
+            >
+              All payments
+            </CButton>
+            <CButton
+              color={viewMode === 'compare' ? 'primary' : 'secondary'}
+              variant={viewMode === 'compare' ? undefined : 'outline'}
+              onClick={() => switchView('compare')}
+            >
+              <CIcon icon={cilChart} className="me-1" />
+              Compare
+            </CButton>
+            <CButton
+              color={viewMode === 'member' ? 'primary' : 'secondary'}
+              variant={viewMode === 'member' ? undefined : 'outline'}
+              onClick={() => switchView('member')}
+            >
               <CIcon icon={cilPeople} className="me-1" />
-              Student Balances ({filteredBalances.length})
-            </CNavLink>
-          </CNavItem>
-        </CNav>
+              By member
+            </CButton>
+          </CButtonGroup>
+        </div>
 
         <CRow className="g-2 mb-3">
-          <CCol md={6}>
-            <CInputGroup className="sms-input-group">
+          <CCol md={viewMode === 'member' ? 4 : 6}>
+            <CInputGroup>
               <CInputGroupText><CIcon icon={cilSearch} /></CInputGroupText>
               <CFormInput
-                placeholder="Search student or owner..."
+                placeholder="Search student, owner, reference… (any word order)"
                 value={paymentSearchQuery}
                 onChange={(e) => {
                   setPaymentSearchQuery(e.target.value)
                   setPage(1)
-                  setBalancePage(1)
                 }}
               />
             </CInputGroup>
           </CCol>
-          <CCol md={6}>
+          {viewMode === 'member' && (
+            <CCol md={4}>
+              <CFormSelect
+                value={selectedOwnerId}
+                onChange={(e) => {
+                  setSelectedOwnerId(e.target.value)
+                  setPage(1)
+                }}
+              >
+                {memberSummaries.map((m) => (
+                  <option key={m.ownerId} value={m.ownerId}>
+                    {m.ownerName}
+                  </option>
+                ))}
+              </CFormSelect>
+            </CCol>
+          )}
+          <CCol md={viewMode === 'member' ? 4 : 6}>
             <CFormSelect
-              className="sms-select"
               value={paymentDateFilter}
               onChange={(e) => {
                 setPaymentDateFilter(e.target.value)
                 setPage(1)
               }}
             >
-              <option value="all">All Time</option>
+              <option value="all">All time</option>
               <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="year">This Year</option>
+              <option value="week">This week</option>
+              <option value="month">This month</option>
+              <option value="year">This year</option>
             </CFormSelect>
           </CCol>
         </CRow>
 
         <div className="sms-audit-stats mb-4">
-          {tab === 'payments' ? (
-            <>
-              <div className="sms-audit-stat sms-audit-stat--blue">
-                <span className="sms-audit-stat-val">{totals.count}</span>
-                <span className="sms-audit-stat-lbl">Records</span>
-              </div>
-              <div className="sms-audit-stat sms-audit-stat--green">
-                <span className="sms-audit-stat-val">{formatMK(totals.amount)}</span>
-                <span className="sms-audit-stat-lbl">Total Collected</span>
-              </div>
-              <div className="sms-audit-stat sms-audit-stat--purple">
-                <span className="sms-audit-stat-val">{totals.initial}</span>
-                <span className="sms-audit-stat-lbl">Initial</span>
-              </div>
-              <div className="sms-audit-stat sms-audit-stat--cyan">
-                <span className="sms-audit-stat-val">{totals.additional}</span>
-                <span className="sms-audit-stat-lbl">Additional</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="sms-audit-stat sms-audit-stat--green">
-                <span className="sms-audit-stat-val">{paidCount}</span>
-                <span className="sms-audit-stat-lbl">Fully Paid</span>
-              </div>
-              <div className="sms-audit-stat sms-audit-stat--orange">
-                <span className="sms-audit-stat-val">{partialCount}</span>
-                <span className="sms-audit-stat-lbl">Partial</span>
-              </div>
-              <div className="sms-audit-stat sms-audit-stat--red">
-                <span className="sms-audit-stat-val">{unpaidCount}</span>
-                <span className="sms-audit-stat-lbl">Unpaid</span>
-              </div>
-              <div className="sms-audit-stat sms-audit-stat--blue">
-                <span className="sms-audit-stat-val">
-                  {formatMK(studentBalances.reduce((s, x) => s + x.balance, 0))}
-                </span>
-                <span className="sms-audit-stat-lbl">Total Outstanding</span>
-              </div>
-            </>
-          )}
+          <div className="sms-audit-stat sms-audit-stat--blue">
+            <span className="sms-audit-stat-val">{scopeStats.count}</span>
+            <span className="sms-audit-stat-lbl">Payments</span>
+          </div>
+          <div className="sms-audit-stat sms-audit-stat--green">
+            <span className="sms-audit-stat-val">{formatMK(scopeStats.amount)}</span>
+            <span className="sms-audit-stat-lbl">Collected</span>
+          </div>
+          <div className="sms-audit-stat sms-audit-stat--red">
+            <span className="sms-audit-stat-val">{formatMK(scopeStats.outstanding)}</span>
+            <span className="sms-audit-stat-lbl">Outstanding</span>
+          </div>
+          <div className="sms-audit-stat sms-audit-stat--orange">
+            <span className="sms-audit-stat-val">{scopeStats.pendingStudents}</span>
+            <span className="sms-audit-stat-lbl">Students owing</span>
+          </div>
+          <div className="sms-audit-stat sms-audit-stat--purple">
+            <span className="sms-audit-stat-val">{scopeStats.initial}</span>
+            <span className="sms-audit-stat-lbl">Initial</span>
+          </div>
+          <div className="sms-audit-stat sms-audit-stat--cyan">
+            <span className="sms-audit-stat-val">{scopeStats.additional}</span>
+            <span className="sms-audit-stat-lbl">Additional</span>
+          </div>
         </div>
 
-        {tab === 'payments' && (
+        {viewMode === 'compare' ? (
+          <div className="sms-finance-compare-table">
+            <CTable responsive hover className="mb-0 align-middle">
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell>Team member</CTableHeaderCell>
+                  <CTableHeaderCell className="text-end">Payments</CTableHeaderCell>
+                  <CTableHeaderCell className="text-end">Collected</CTableHeaderCell>
+                  <CTableHeaderCell className="text-end">Students</CTableHeaderCell>
+                  <CTableHeaderCell className="text-end">Outstanding</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center">Status</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                {memberSummaries.map((m) => (
+                  <CTableRow key={m.ownerId}>
+                    <CTableDataCell>
+                      <CBadge color={getOwnerBadgeColor(m.ownerType)} className="me-2">
+                        {m.ownerName?.split(' ')[0]}
+                      </CBadge>
+                      <strong>{m.ownerName}</strong>
+                    </CTableDataCell>
+                    <CTableDataCell className="text-end">{m.paymentCount}</CTableDataCell>
+                    <CTableDataCell className="text-end text-success fw-semibold">
+                      {formatMK(m.totalCollected)}
+                    </CTableDataCell>
+                    <CTableDataCell className="text-end">{m.studentCount}</CTableDataCell>
+                    <CTableDataCell className="text-end text-danger fw-semibold">
+                      {formatMK(m.outstanding)}
+                    </CTableDataCell>
+                    <CTableDataCell className="text-center">
+                      {m.pendingStudents === 0 ? (
+                        <CBadge color="success">
+                          <CIcon icon={cilCheckCircle} size="sm" className="me-1" />
+                          Clear
+                        </CBadge>
+                      ) : (
+                        <CBadge color="warning">
+                          <CIcon icon={cilWarning} size="sm" className="me-1" />
+                          {m.pendingStudents} owing
+                        </CBadge>
+                      )}
+                    </CTableDataCell>
+                  </CTableRow>
+                ))}
+                {memberSummaries.length > 1 && (
+                  <CTableRow className="sms-finance-compare-total">
+                    <CTableDataCell><strong>All team</strong></CTableDataCell>
+                    <CTableDataCell className="text-end fw-bold">
+                      {memberSummaries.reduce((s, m) => s + m.paymentCount, 0)}
+                    </CTableDataCell>
+                    <CTableDataCell className="text-end fw-bold text-success">
+                      {formatMK(memberSummaries.reduce((s, m) => s + m.totalCollected, 0))}
+                    </CTableDataCell>
+                    <CTableDataCell className="text-end fw-bold">
+                      {memberSummaries.reduce((s, m) => s + m.studentCount, 0)}
+                    </CTableDataCell>
+                    <CTableDataCell className="text-end fw-bold text-danger">
+                      {formatMK(memberSummaries.reduce((s, m) => s + m.outstanding, 0))}
+                    </CTableDataCell>
+                    <CTableDataCell className="text-center">
+                      <CBadge color="primary">
+                        {memberSummaries.reduce((s, m) => s + m.pendingStudents, 0)} owing
+                      </CBadge>
+                    </CTableDataCell>
+                  </CTableRow>
+                )}
+              </CTableBody>
+            </CTable>
+          </div>
+        ) : paginatedPayments.length === 0 ? (
+          <CAlert color="info" className="text-center mb-0">No payments match your filters.</CAlert>
+        ) : (
           <>
-            {paginatedPayments.length === 0 ? (
-              <CAlert color="info" className="text-center">No payments found.</CAlert>
-            ) : (
-              <CRow className="g-3">
+            <CTable responsive hover className="sms-audit-payments-table mb-0">
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell>Date</CTableHeaderCell>
+                  <CTableHeaderCell>Student</CTableHeaderCell>
+                  {viewMode === 'all' && <CTableHeaderCell>Owner</CTableHeaderCell>}
+                  <CTableHeaderCell className="text-end">Amount</CTableHeaderCell>
+                  <CTableHeaderCell>Method</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center">Type</CTableHeaderCell>
+                  <CTableHeaderCell className="text-end">Balance</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
                 {paginatedPayments.map((payment) => {
                   const paymentDate = payment.paymentDate?.toDate
-                    ? format(payment.paymentDate.toDate(), 'dd MMM yyyy · HH:mm')
+                    ? format(payment.paymentDate.toDate(), 'dd MMM yyyy HH:mm')
                     : '—'
                   const paymentType = payment.isInitialPayment ? 'Initial' : 'Additional'
-                  const student = allStudents.find((s) => s.id === payment.studentId)
+                  const student = allStudents.find((s) => s.id === payment.studentId && s.ownerId === payment.ownerId)
                   const balance = student ? calcBalance(student) : null
 
                   return (
-                    <CCol md={6} key={payment.id}>
-                      <div className={`sms-payment-card sms-payment-card--${payment.isInitialPayment ? 'initial' : 'additional'}`}>
-                        <div className="sms-payment-card-top">
-                          <div>
-                            <div className="sms-payment-student">{payment.studentName || 'Unknown'}</div>
-                            <div className="sms-payment-date">{paymentDate}</div>
-                          </div>
-                          <div className="sms-payment-amount">{formatMK(payment.amount || 0)}</div>
-                        </div>
-                        <div className="sms-payment-card-meta">
+                    <CTableRow key={payment.id}>
+                      <CTableDataCell className="text-nowrap">{paymentDate}</CTableDataCell>
+                      <CTableDataCell>
+                        <strong>{payment.studentName || '—'}</strong>
+                        {payment.referenceNumber && (
+                          <div className="small text-muted">Ref: {payment.referenceNumber}</div>
+                        )}
+                      </CTableDataCell>
+                      {viewMode === 'all' && (
+                        <CTableDataCell>
                           <CBadge color={getOwnerBadgeColor(payment.ownerType)}>
                             {payment.ownerName}
                           </CBadge>
-                          <CBadge color={getPaymentMethodColor(payment.paymentMethod)}>
-                            {payment.paymentMethod}
-                          </CBadge>
-                          <CBadge color={getPaymentTypeColor(paymentType.toLowerCase())}>
-                            {paymentType}
-                          </CBadge>
-                        </div>
-                        {balance !== null && (
-                          <div className="sms-payment-balance-row">
-                            {balance <= 0 ? (
-                              <span className="text-success small">
-                                <CIcon icon={cilCheckCircle} className="me-1" />
-                                Fully paid
-                              </span>
-                            ) : (
-                              <span className="text-warning small">
-                                <CIcon icon={cilWarning} className="me-1" />
-                                Remaining: <strong>{formatMK(balance)}</strong>
-                              </span>
-                            )}
-                          </div>
+                        </CTableDataCell>
+                      )}
+                      <CTableDataCell className="text-end fw-bold text-success">
+                        {formatMK(payment.amount)}
+                      </CTableDataCell>
+                      <CTableDataCell>
+                        <CBadge color={getPaymentMethodColor(payment.paymentMethod)}>
+                          {payment.paymentMethod}
+                        </CBadge>
+                      </CTableDataCell>
+                      <CTableDataCell className="text-center">
+                        <CBadge color={getPaymentTypeColor(paymentType.toLowerCase())}>
+                          {paymentType}
+                        </CBadge>
+                      </CTableDataCell>
+                      <CTableDataCell className="text-end">
+                        {balance === null ? (
+                          '—'
+                        ) : balance <= 0 ? (
+                          <CBadge color="success">Paid</CBadge>
+                        ) : (
+                          <span className="text-danger fw-semibold">{formatMK(balance)}</span>
                         )}
-                        {payment.referenceNumber && (
-                          <div className="sms-payment-ref">Ref: {payment.referenceNumber}</div>
-                        )}
-                      </div>
-                    </CCol>
+                      </CTableDataCell>
+                    </CTableRow>
                   )
                 })}
-              </CRow>
-            )}
-            <SmartPagination
-              currentPage={page}
-              totalPages={totalPaymentPages}
-              onPageChange={setPage}
-            />
-          </>
-        )}
-
-        {tab === 'balances' && (
-          <>
-            {paginatedBalances.length === 0 ? (
-              <CAlert color="info" className="text-center">No students found.</CAlert>
-            ) : (
-              <CRow className="g-3">
-                {paginatedBalances.map((s) => (
-                  <CCol md={6} lg={4} key={`${s.ownerId}-${s.id}`}>
-                    <div className={`sms-balance-card sms-balance-card--${s.status}`}>
-                      <div className="sms-balance-card-header">
-                        <div className="sms-balance-avatar">
-                          {(s.name || '?').charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-grow-1">
-                          <div className="fw-bold">{s.name}</div>
-                          <div className="small text-muted">{s.ownerName}</div>
-                        </div>
-                        <CBadge
-                          color={
-                            s.status === 'paid' ? 'success' : s.status === 'partial' ? 'warning' : 'danger'
-                          }
-                        >
-                          {s.status === 'paid' ? 'Paid' : s.status === 'partial' ? 'Partial' : 'Unpaid'}
-                        </CBadge>
-                      </div>
-                      <div className="sms-balance-amounts">
-                        <div>
-                          <span className="sms-balance-lbl">Paid</span>
-                          <span className="sms-balance-val text-success">{formatMK(s.paid)}</span>
-                        </div>
-                        <div>
-                          <span className="sms-balance-lbl">Due</span>
-                          <span className="sms-balance-val">{formatMK(s.totalDue)}</span>
-                        </div>
-                        <div>
-                          <span className="sms-balance-lbl">Balance</span>
-                          <span className={`sms-balance-val ${s.balance > 0 ? 'text-danger' : 'text-success'}`}>
-                            {formatMK(s.balance)}
-                          </span>
-                        </div>
-                      </div>
-                      <CProgress
-                        className="sms-balance-progress mt-2"
-                        color={s.rate >= 100 ? 'success' : s.rate >= 50 ? 'warning' : 'danger'}
-                        value={s.rate}
-                      />
-                      <div className="small text-muted mt-1 text-end">{s.rate.toFixed(0)}% collected</div>
-                    </div>
-                  </CCol>
-                ))}
-              </CRow>
-            )}
-            <SmartPagination
-              currentPage={balancePage}
-              totalPages={totalBalancePages}
-              onPageChange={setBalancePage}
-            />
+              </CTableBody>
+            </CTable>
+            <SmartPagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         )}
       </CModalBody>
@@ -346,7 +408,7 @@ const PaymentAuditModal = ({
         {onExportPdf && (
           <CButton color="primary" onClick={onExportPdf}>
             <CIcon icon={cilCloudDownload} className="me-1" />
-            Export Full Audit PDF ({payments.length})
+            Export PDF
           </CButton>
         )}
         <CButton color="secondary" variant="ghost" onClick={onClose}>

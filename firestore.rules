@@ -96,7 +96,18 @@ service cloud.firestore {
     }
 
     function canReadUser(userId) {
-      return isSelf(userId) || isSuperAdmin() || managesUser(userId);
+      return isSelf(userId) || isSuperAdmin() || managesUser(userId)
+        || (isSignedIn()
+            && resource != null
+            && resource.data.managedUserIds != null
+            && request.auth.uid in resource.data.managedUserIds);
+    }
+
+    function isOnAdminTeam(catalogOwnerId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(catalogOwnerId))
+        && get(/databases/$(database)/documents/users/$(catalogOwnerId)).data.managedUserIds != null
+        && request.auth.uid in get(/databases/$(database)/documents/users/$(catalogOwnerId)).data.managedUserIds;
     }
 
     function canAccessUserData(userId) {
@@ -133,7 +144,9 @@ service cloud.firestore {
     // Login audit trail — users write their own sign-in; admins see their team; super-admin sees all
     match /loginLogs/{logId} {
       allow read: if isSuperAdmin()
-        || (isAdmin() && resource.data.scopeAdminId == request.auth.uid);
+        || (isAdmin() && resource.data.scopeAdminId == request.auth.uid)
+        || (isAdmin() && managesUser(resource.data.userId))
+        || (isAdmin() && resource.data.userId == request.auth.uid);
       allow create: if isSignedIn()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.event == 'login'
@@ -143,8 +156,13 @@ service cloud.firestore {
 
     // Public school landing pages (admin-built, Firestore-only)
     match /publicSites/{slug} {
-      allow read: if resource.data.published == true
-        || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      // published = public; admins can read any site (slug checks); owners read their drafts
+      allow get: if (resource != null && resource.data.published == true)
+        || (isSignedIn() && (
+          isFullAccessRole()
+          || (resource != null && resource.data.ownerId == request.auth.uid)
+        ));
+      allow list: if isFullAccessRole() || isSuperAdmin();
       allow create: if isSignedIn()
         && isFullAccessRole()
         && request.resource.data.ownerId == request.auth.uid;
@@ -198,17 +216,35 @@ service cloud.firestore {
         allow update: if canAccessUserData(userId) && permEditFor(userId);
         allow delete: if canAccessUserData(userId) && permDeleteFor(userId);
       }
+    function canReadCatalog(userId) {
+      return canReadUser(userId)
+        || (hasProfile() && (
+          myProfile().managedBy == userId
+          || myProfile().createdBy == userId
+        ))
+        || isOnAdminTeam(userId);
+    }
+
+    function canWriteCatalog(userId) {
+      return isSuperAdmin()
+        || (isFullAccessRole() && request.auth.uid == userId);
+    }
+
       match /courses/{docId} {
-        allow read: if canReadUser(userId);
-        allow create: if canAccessUserData(userId) && permCreateFor(userId);
-        allow update: if canAccessUserData(userId) && permEditFor(userId);
-        allow delete: if canAccessUserData(userId) && permDeleteFor(userId);
+        allow read: if canReadCatalog(userId);
+        allow create: if canWriteCatalog(userId);
+        allow update: if canWriteCatalog(userId)
+          || (isSelf(userId) && canAccessUserData(userId) && permEditFor(userId));
+        allow delete: if canWriteCatalog(userId)
+          || (isSelf(userId) && canAccessUserData(userId) && permDeleteFor(userId));
       }
       match /cohorts/{docId} {
-        allow read: if canReadUser(userId);
-        allow create: if canAccessUserData(userId) && permCreateFor(userId);
-        allow update: if canAccessUserData(userId) && permEditFor(userId);
-        allow delete: if canAccessUserData(userId) && permDeleteFor(userId);
+        allow read: if canReadCatalog(userId);
+        allow create: if canWriteCatalog(userId);
+        allow update: if canWriteCatalog(userId)
+          || (isSelf(userId) && canAccessUserData(userId) && permEditFor(userId));
+        allow delete: if canWriteCatalog(userId)
+          || (isSelf(userId) && canAccessUserData(userId) && permDeleteFor(userId));
       }
       match /payments/{docId} {
         allow read: if canReadUser(userId);

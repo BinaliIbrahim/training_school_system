@@ -176,7 +176,6 @@ function calcStudentDue(student, courses, matchOwner = false) {
   return (
     (course?.fee ?? 0) +
     (student.registrationFee ?? 0) +
-    (student.trainingFee ?? 0) +
     (student.boardingFee ?? 0)
   )
 }

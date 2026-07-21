@@ -1,5 +1,8 @@
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
+import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase'
+
+/** Consider user "active" if seen within this window. */
+export const ACTIVE_WINDOW_MS = 5 * 60 * 1000
 
 /** Parse basic device info from the browser (client-side only). */
 export function getDeviceInfo() {
@@ -60,6 +63,50 @@ export async function recordLoginLog(userId, userData = {}) {
     })
   } catch (err) {
     console.warn('Login log not saved:', err.message)
+  }
+}
+
+export const toPresenceDate = (value) => {
+  if (!value) return null
+  if (value.toDate) return value.toDate()
+  if (value.seconds != null) return new Date(value.seconds * 1000)
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? null : d
+}
+
+export const isUserActive = (lastActiveAt) => {
+  const d = toPresenceDate(lastActiveAt)
+  if (!d) return false
+  return Date.now() - d.getTime() < ACTIVE_WINDOW_MS
+}
+
+export const formatLastSeen = (lastActiveAt, lastLogin) => {
+  const d = toPresenceDate(lastActiveAt) || toPresenceDate(lastLogin)
+  if (!d) return 'No activity yet'
+  if (isUserActive(lastActiveAt || lastLogin)) return 'Active now'
+
+  const diffMs = Date.now() - d.getTime()
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 60) return `${mins || 1}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+let lastPresenceTouch = 0
+
+/** Heartbeat — updates lastActiveAt (throttled). */
+export async function touchUserPresence(userId) {
+  if (!userId) return
+  const now = Date.now()
+  if (now - lastPresenceTouch < 90_000) return
+  lastPresenceTouch = now
+  try {
+    await updateDoc(doc(db, 'users', userId), { lastActiveAt: serverTimestamp() })
+  } catch (err) {
+    console.warn('Presence update failed:', err.message)
   }
 }
 

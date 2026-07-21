@@ -56,6 +56,7 @@ import {
   cilOptions,
   cilArrowRight,
   cilArrowLeft,
+  cilUser,
 } from '@coreui/icons';
 import {
   collection,
@@ -68,6 +69,7 @@ import {
   serverTimestamp,
   getDoc,
   orderBy,
+  getDocs,
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
@@ -94,9 +96,13 @@ import {
   downloadPaymentsAudit,
   downloadStudentReceipt,
 } from '../../utils/pdfReports';
+import { resolveCatalogOwnerId, mergeCatalogItems, findCourseForStudent, findCohortForStudent, calcTotalDueForStudent, calcBalanceForStudent, canModifyLegacyCatalogItem, getCourseFeeForStudent, isEligibleForEquipmentAndCertificates } from '../../utils/schoolCatalog';
 import CoordinatorDashboardView from '../../components/dashboard/CoordinatorDashboardView';
+import OutstandingBalancesPanel from '../../components/dashboard/OutstandingBalancesPanel';
+import { StudentStatusBadge, StudentEligibilityBanner } from '../../components/dashboard/StudentEligibility';
 import { canUserCreate, canUserEdit, canUserDelete, COORDINATOR_PERMISSIONS, permissionsSummary, permissionBlockReason } from '../../utils/permissions';
 import { notifyCrud } from '../../utils/notifications';
+import { matchesSearchQuery } from '../../utils/search';
 import { useAppToast } from '../../hooks/useAppToast';
 
 // -------------------------------------------------
@@ -123,6 +129,10 @@ const Dashboard = () => {
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [cohorts, setCohorts] = useState([]);
+  const [adminCourses, setAdminCourses] = useState([]);
+  const [adminCohorts, setAdminCohorts] = useState([]);
+  const [legacyCourses, setLegacyCourses] = useState([]);
+  const [legacyCohorts, setLegacyCohorts] = useState([]);
   const [payments, setPayments] = useState([]);
   const [totalCollected, setTotalCollected] = useState(0);
   const [totalBalance, setTotalBalance] = useState(0);
@@ -135,6 +145,7 @@ const Dashboard = () => {
   const [paymentModal, setPaymentModal] = useState(false);
   const [editPaymentModal, setEditPaymentModal] = useState(false);
   const [paymentHistoryModal, setPaymentHistoryModal] = useState(false);
+  const [studentDetailModal, setStudentDetailModal] = useState(false);
   const [allPaymentsModal, setAllPaymentsModal] = useState(false);
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -142,7 +153,9 @@ const Dashboard = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [editingStudentId, setEditingStudentId] = useState(null);
   const [editingCourseId, setEditingCourseId] = useState(null);
+  const [editingCourseOwnerId, setEditingCourseOwnerId] = useState(null);
   const [editingCohortId, setEditingCohortId] = useState(null);
+  const [editingCohortOwnerId, setEditingCohortOwnerId] = useState(null);
 
   // ---------- Forms ----------
   const [studentForm, setStudentForm] = useState({
@@ -212,6 +225,56 @@ const Dashboard = () => {
     'Firestore blocked this write. In Firebase Console → Firestore → Rules, paste your local firestore.rules file and click Publish. Then sign out and sign in.';
 
   const permissionBlock = useMemo(() => permissionBlockReason(userProfile), [userProfile]);
+
+  const [catalogOwnerId, setCatalogOwnerId] = useState(null);
+  const [catalogResolving, setCatalogResolving] = useState(true);
+
+  useEffect(() => {
+    if (!subscriptionOk || !user?.uid) return;
+
+    let cancelled = false;
+    setCatalogResolving(true);
+
+    (async () => {
+      const id = await resolveCatalogOwnerId(db, userProfile, userRole, user.uid);
+      if (!cancelled) {
+        setCatalogOwnerId(id);
+        setCatalogResolving(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [subscriptionOk, user?.uid, userProfile, userRole]);
+
+  useEffect(() => {
+    setCourses(mergeCatalogItems(adminCourses, legacyCourses));
+  }, [adminCourses, legacyCourses]);
+
+  useEffect(() => {
+    setCohorts(mergeCatalogItems(adminCohorts, legacyCohorts));
+  }, [adminCohorts, legacyCohorts]);
+
+  const resolveCourse = useMemo(
+    () => (student) => findCourseForStudent(student, courses, catalogOwnerId),
+    [courses, catalogOwnerId],
+  );
+
+  const resolveCohort = useMemo(
+    () => (student) => findCohortForStudent(student, cohorts, catalogOwnerId),
+    [cohorts, catalogOwnerId],
+  );
+
+  const formCourseFee = useMemo(() => {
+    const course = courses.find((c) => c.id === studentForm.courseId);
+    return course?.fee ?? null;
+  }, [studentForm.courseId, courses]);
+
+  const studentFormCourses = useMemo(() => {
+    if (!studentForm.cohortId) return courses
+    return courses.filter((c) => !c.cohortId || c.cohortId === studentForm.cohortId)
+  }, [courses, studentForm.cohortId]);
 
   const showAlert = (message, color = 'success') => {
     if (color === 'success' || color === 'primary') {
@@ -339,9 +402,85 @@ const Dashboard = () => {
     return () => unsub();
   }, [user?.uid, subscriptionOk]);
 
-  // -------------------------------------------------
-  // 2. LISTEN TO USER-SPECIFIC DATA - UPDATED
-  // -------------------------------------------------
+  // Admin shared catalog + legacy workspace courses/cohorts (pre-catalog data)
+  useEffect(() => {
+    if (!subscriptionOk || !user?.uid) return
+
+    const unsubs = []
+    const workspaceId = user.uid
+    const loadLegacy = !catalogOwnerId || catalogOwnerId !== workspaceId
+
+    if (catalogOwnerId) {
+      const coursesRef = collection(db, `users/${catalogOwnerId}/courses`)
+      const cohortsRef = collection(db, `users/${catalogOwnerId}/cohorts`)
+
+      unsubs.push(
+        onSnapshot(
+          coursesRef,
+          (snap) => {
+            setAdminCourses(
+              snap.docs.map((d) => ({ id: d.id, ...d.data(), ownerId: catalogOwnerId })),
+            )
+          },
+          (error) => {
+            console.error('Error loading catalog courses:', error)
+            showAlert('Could not load courses from your school admin: ' + error.message, 'danger')
+          },
+        ),
+      )
+
+      unsubs.push(
+        onSnapshot(
+          cohortsRef,
+          (snap) => {
+            setAdminCohorts(
+              snap.docs.map((d) => ({ id: d.id, ...d.data(), ownerId: catalogOwnerId })),
+            )
+          },
+          (error) => {
+            console.error('Error loading catalog cohorts:', error)
+            showAlert('Could not load cohorts from your school admin: ' + error.message, 'danger')
+          },
+        ),
+      )
+    } else {
+      setAdminCourses([])
+      setAdminCohorts([])
+    }
+
+    if (loadLegacy) {
+      unsubs.push(
+        onSnapshot(
+          collection(db, `users/${workspaceId}/courses`),
+          (snap) => {
+            setLegacyCourses(
+              snap.docs.map((d) => ({ id: d.id, ...d.data(), ownerId: workspaceId, legacy: true })),
+            )
+          },
+          (error) => console.error('Error loading legacy courses:', error),
+        ),
+      )
+
+      unsubs.push(
+        onSnapshot(
+          collection(db, `users/${workspaceId}/cohorts`),
+          (snap) => {
+            setLegacyCohorts(
+              snap.docs.map((d) => ({ id: d.id, ...d.data(), ownerId: workspaceId, legacy: true })),
+            )
+          },
+          (error) => console.error('Error loading legacy cohorts:', error),
+        ),
+      )
+    } else {
+      setLegacyCourses([])
+      setLegacyCohorts([])
+    }
+
+    return () => unsubs.forEach((unsub) => unsub())
+  }, [subscriptionOk, catalogOwnerId, user?.uid])
+
+  // Own students & payments
   useEffect(() => {
     if (!user || !subscriptionOk) return;
     if (!['student', 'admin', 'super-admin'].includes(userRole)) return;
@@ -349,37 +488,17 @@ const Dashboard = () => {
     const uid = user.uid;
 
     const studentsCol = collection(db, `users/${uid}/students`);
-    const coursesCol = collection(db, `users/${uid}/courses`);
-    const cohortsCol = collection(db, `users/${uid}/cohorts`);
     const paymentsCol = collection(db, `users/${uid}/payments`);
 
     const qStudents = query(studentsCol);
-    const qCourses = query(coursesCol);
-    const qCohorts = query(cohortsCol);
     const qPayments = query(paymentsCol, orderBy('paymentDate', 'desc'));
 
     const unsubStudents = onSnapshot(qStudents, (snap) => {
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data(), ownerId: uid }));
       setStudents(list);
     }, (error) => {
       console.error('Error loading students:', error);
       showAlert('Error loading students: ' + error.message, 'danger');
-    });
-
-    const unsubCourses = onSnapshot(qCourses, (snap) => {
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setCourses(list);
-    }, (error) => {
-      console.error('Error loading courses:', error);
-      showAlert('Error loading courses: ' + error.message, 'danger');
-    });
-
-    const unsubCohorts = onSnapshot(qCohorts, (snap) => {
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setCohorts(list);
-    }, (error) => {
-      console.error('Error loading cohorts:', error);
-      showAlert('Error loading cohorts: ' + error.message, 'danger');
     });
 
     const unsubPayments = onSnapshot(qPayments, (snap) => {
@@ -393,8 +512,6 @@ const Dashboard = () => {
 
     return () => {
       unsubStudents();
-      unsubCourses();
-      unsubCohorts();
       unsubPayments();
     };
   }, [user, subscriptionOk, userRole]);
@@ -443,12 +560,7 @@ const Dashboard = () => {
     let balance = 0;
 
     filteredStudentsByDate.forEach((s) => {
-      const course = courses.find((c) => c.id === s.courseId);
-      const totalDue =
-        (course?.fee || 0) +
-        (s.registrationFee || 0) +
-        (s.trainingFee || 0) +
-        (s.boardingFee || 0);
+      const totalDue = calcTotalDueForStudent(s, courses, catalogOwnerId)
       const paid = s.amountPaid || 0;
       collected += paid;
       balance += totalDue - paid;
@@ -456,21 +568,20 @@ const Dashboard = () => {
 
     setTotalCollected(collected);
     setTotalBalance(balance);
-  }, [filteredStudentsByDate, courses]);
+  }, [filteredStudentsByDate, courses, catalogOwnerId]);
 
   // -------------------------------------------------
   // 5. FILTERED DATA - UPDATED
   // -------------------------------------------------
   const filteredCohorts = useMemo(() => {
-    return cohorts.filter((c) => {
-      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesSearch;
-    });
+    return cohorts.filter((c) =>
+      matchesSearchQuery(searchQuery, c.name, c.description),
+    );
   }, [cohorts, searchQuery]);
 
   const filteredCourses = useMemo(() => {
     return courses.filter((c) => {
-      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = matchesSearchQuery(searchQuery, c.name, c.description, c.type);
       const matchesCohort = !filterCohort || c.cohortId === filterCohort;
       return matchesSearch && matchesCohort;
     });
@@ -478,7 +589,15 @@ const Dashboard = () => {
 
   const filteredStudents = useMemo(() => {
     return filteredStudentsByDate.filter((s) => {
-      const matchesSearch = s.name?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+      const matchesSearch = matchesSearchQuery(
+        searchQuery,
+        s.name,
+        s.phone,
+        s.transId,
+        s.modeOfPayment,
+        s.courseName,
+        s.cohortName,
+      );
       const matchesCourse = !filterCourse || s.courseId === filterCourse;
       const matchesCohort = !filterCohort || s.cohortId === filterCohort;
       return matchesSearch && matchesCourse && matchesCohort;
@@ -490,11 +609,15 @@ const Dashboard = () => {
     let filtered = payments;
 
     if (paymentSearchQuery) {
-      filtered = filtered.filter(p => 
-        p.studentName?.toLowerCase().includes(paymentSearchQuery.toLowerCase()) ||
-        p.referenceNumber?.toLowerCase().includes(paymentSearchQuery.toLowerCase()) ||
-        p.paymentMethod?.toLowerCase().includes(paymentSearchQuery.toLowerCase()) ||
-        p.notes?.toLowerCase().includes(paymentSearchQuery.toLowerCase())
+      filtered = filtered.filter((p) =>
+        matchesSearchQuery(
+          paymentSearchQuery,
+          p.studentName,
+          p.referenceNumber,
+          p.paymentMethod,
+          p.notes,
+          p.amount,
+        ),
       );
     }
 
@@ -580,6 +703,20 @@ const Dashboard = () => {
   }, [getAllPaymentsWithInitial, currentPaymentPage]);
 
   const totalPaymentPages = Math.ceil(getAllPaymentsWithInitial.length / paymentsPerPage);
+
+  const auditBalanceStats = useMemo(() => {
+    let totalPending = 0
+    const owing = []
+    students.forEach((s) => {
+      const balance = calcBalanceForStudent(s, courses, catalogOwnerId)
+      if (balance > 0) {
+        totalPending += balance
+        owing.push({ ...s, balance })
+      }
+    })
+    owing.sort((a, b) => b.balance - a.balance)
+    return { totalPending, owing, withBalance: owing.length }
+  }, [students, courses, catalogOwnerId]);
 
   const studentsWithBoarding = filteredStudents.filter(s => (s.boardingFee || 0) > 0);
   const studentsWithoutBoarding = filteredStudents.filter(s => (s.boardingFee || 0) === 0);
@@ -696,6 +833,11 @@ const Dashboard = () => {
     setStudentModal(true);
   };
 
+  const openStudentDetailModal = (student) => {
+    setSelectedStudent(student);
+    setStudentDetailModal(true);
+  };
+
   const handleStudentSubmit = async (e) => {
     e.preventDefault();
     const errors = validateStudent();
@@ -708,10 +850,10 @@ const Dashboard = () => {
       name: studentForm.name,
       courseId: studentForm.courseId,
       cohortId: studentForm.cohortId,
+      catalogOwnerId: catalogOwnerId || userProfile?.managedBy || userProfile?.createdBy || user?.uid,
       age: parseInt(studentForm.age) || 0,
       gender: studentForm.gender,
       registrationFee: parseFloat(studentForm.registrationFee) || 0,
-      trainingFee: parseFloat(studentForm.trainingFee) || 0,
       boardingFee: parseFloat(studentForm.boardingFee) || 0,
       amountPaid: parseFloat(studentForm.amountPaid) || 0,
       phoneNumber: studentForm.phoneNumber || '',
@@ -766,6 +908,7 @@ const Dashboard = () => {
 
   const openCourseModal = () => {
     setEditingCourseId(null);
+    setEditingCourseOwnerId(null);
     setCourseForm({ 
       name: '', 
       fee: '', 
@@ -782,7 +925,12 @@ const Dashboard = () => {
       showAlert('You do not have permission to edit courses.', 'danger');
       return;
     }
+    if (!canModifyLegacyCatalogItem(course, user.uid, catalogOwnerId)) {
+      showAlert('Only your school admin can edit shared catalog courses.', 'warning');
+      return;
+    }
     setEditingCourseId(course.id);
+    setEditingCourseOwnerId(course.ownerId || user.uid);
     setCourseForm({
       name: course.name || '',
       fee: course.fee?.toString() || '',
@@ -819,7 +967,7 @@ const Dashboard = () => {
       }
       try {
         const { createdAt, ...updatePayload } = payload;
-        const courseRef = doc(db, `users/${user.uid}/courses`, editingCourseId);
+        const courseRef = doc(db, `users/${editingCourseOwnerId || user.uid}/courses`, editingCourseId);
         await updateDoc(courseRef, {
           ...updatePayload,
           updatedAt: serverTimestamp(),
@@ -857,6 +1005,7 @@ const Dashboard = () => {
 
   const openCohortModal = () => {
     setEditingCohortId(null);
+    setEditingCohortOwnerId(null);
     setCohortForm({ 
       name: '', 
       startDate: '', 
@@ -873,7 +1022,12 @@ const Dashboard = () => {
       showAlert('You do not have permission to edit cohorts.', 'danger');
       return;
     }
+    if (!canModifyLegacyCatalogItem(cohort, user.uid, catalogOwnerId)) {
+      showAlert('Only your school admin can edit shared catalog cohorts.', 'warning');
+      return;
+    }
     setEditingCohortId(cohort.id);
+    setEditingCohortOwnerId(cohort.ownerId || user.uid);
     setCohortForm({
       name: cohort.name || '',
       startDate: cohort.startDate || '',
@@ -900,7 +1054,7 @@ const Dashboard = () => {
       }
       try {
         const { createdAt, ...updatePayload } = payload;
-        const cohortRef = doc(db, `users/${user.uid}/cohorts`, editingCohortId);
+        const cohortRef = doc(db, `users/${editingCohortOwnerId || user.uid}/cohorts`, editingCohortId);
         await updateDoc(cohortRef, {
           ...updatePayload,
           updatedAt: serverTimestamp(),
@@ -1187,11 +1341,23 @@ const Dashboard = () => {
         showAlert('Student deleted successfully!');
         notifyCrud('deleted', 'student', itemToDelete.name);
       } else if (itemToDelete.type === 'course') {
-        await deleteDoc(doc(db, `users/${user.uid}/courses`, itemToDelete.id));
+        const ownerId = itemToDelete.ownerId || user.uid
+        if (!canModifyLegacyCatalogItem(itemToDelete, user.uid, catalogOwnerId)) {
+          showAlert('Only your school admin can delete shared catalog courses.', 'warning')
+          setDeleteConfirmModal(false)
+          return
+        }
+        await deleteDoc(doc(db, `users/${ownerId}/courses`, itemToDelete.id));
         showAlert('Course deleted successfully!');
         notifyCrud('deleted', 'course', itemToDelete.name);
       } else if (itemToDelete.type === 'cohort') {
-        await deleteDoc(doc(db, `users/${user.uid}/cohorts`, itemToDelete.id));
+        const ownerId = itemToDelete.ownerId || user.uid
+        if (!canModifyLegacyCatalogItem(itemToDelete, user.uid, catalogOwnerId)) {
+          showAlert('Only your school admin can delete shared catalog cohorts.', 'warning')
+          setDeleteConfirmModal(false)
+          return
+        }
+        await deleteDoc(doc(db, `users/${ownerId}/cohorts`, itemToDelete.id));
         showAlert('Cohort deleted successfully!');
         notifyCrud('deleted', 'cohort', itemToDelete.name);
       } else if (itemToDelete.type === 'payment') {
@@ -1260,8 +1426,8 @@ const Dashboard = () => {
 
   const generateDetailedReceipt = (student) => {
     try {
-      const course = courses.find((c) => c.id === student.courseId);
-      const cohort = cohorts.find((coh) => coh.id === student.cohortId);
+      const course = resolveCourse(student);
+      const cohort = resolveCohort(student);
 
       const studentPayments = getAllPaymentsWithInitial
         .filter((p) => p.studentId === student.id)
@@ -1289,20 +1455,9 @@ const Dashboard = () => {
   // -------------------------------------------------
   // 10. HELPERS - UPDATED
   // -------------------------------------------------
-  const calcTotalDue = (student) => {
-    if (!student) return 0;
-    const course = courses.find((c) => c.id === student.courseId);
-    return (course?.fee || 0) +
-           (student.registrationFee || 0) +
-           (student.trainingFee || 0) +
-           (student.boardingFee || 0);
-  };
+  const calcTotalDue = (student) => calcTotalDueForStudent(student, courses, catalogOwnerId);
 
-  const calcBalance = (student) => {
-    if (!student) return 0;
-    const totalDue = calcTotalDue(student);
-    return totalDue - (student.amountPaid || 0);
-  };
+  const calcBalance = (student) => calcBalanceForStudent(student, courses, catalogOwnerId);
 
   const getCohortStatus = (cohort) => {
     if (!cohort?.startDate || !cohort?.endDate) return { text: 'Unknown', color: 'secondary' };
@@ -1451,20 +1606,20 @@ const Dashboard = () => {
   return (
     <>
       {/* All Payments Modal */}
-      <CModal size="xl" visible={allPaymentsModal} onClose={() => setAllPaymentsModal(false)}>
-        <CModalHeader>
+      <CModal size="xl" visible={allPaymentsModal} onClose={() => setAllPaymentsModal(false)} className="sms-audit-modal">
+        <CModalHeader className="sms-modal-header">
           <CModalTitle>
             <CIcon icon={cilList} className="me-2" />
             Complete Payment Audit ({getAllPaymentsWithInitial.length})
           </CModalTitle>
         </CModalHeader>
-        <CModalBody>
+        <CModalBody className="sms-modal-body">
           <CRow className="mb-3">
             <CCol md={6}>
               <CInputGroup>
                 <CInputGroupText><CIcon icon={cilSearch} /></CInputGroupText>
                 <CFormInput 
-                  placeholder="Search payments by student, reference..." 
+                  placeholder="Search payments… (any word order)" 
                   value={paymentSearchQuery} 
                   onChange={(e) => setPaymentSearchQuery(e.target.value)} 
                 />
@@ -1481,28 +1636,46 @@ const Dashboard = () => {
             </CCol>
           </CRow>
 
-          <CRow className="mb-3">
-            <CCol>
-              <CCard className="bg-light">
-                <CCardBody className="py-2">
-                  <CRow className="text-center">
-                    <CCol>
-                      <strong>Total Records:</strong> {getAllPaymentsWithInitial.length}
-                    </CCol>
-                    <CCol>
-                      <strong>Total Amount:</strong> {formatMK(getAllPaymentsWithInitial.reduce((sum, p) => sum + (p.amount || 0), 0))}
-                    </CCol>
-                    <CCol>
-                      <strong>Initial Payments:</strong> {getAllPaymentsWithInitial.filter(p => p.isInitialPayment).length}
-                    </CCol>
-                    <CCol>
-                      <strong>Additional Payments:</strong> {getAllPaymentsWithInitial.filter(p => !p.isInitialPayment).length}
-                    </CCol>
-                  </CRow>
-                </CCardBody>
-              </CCard>
-            </CCol>
-          </CRow>
+          <div className="sms-audit-stats mb-4">
+            <div className="sms-audit-stat sms-audit-stat--blue">
+              <span className="sms-audit-stat-val">{getAllPaymentsWithInitial.length}</span>
+              <span className="sms-audit-stat-lbl">Total Records</span>
+            </div>
+            <div className="sms-audit-stat sms-audit-stat--green">
+              <span className="sms-audit-stat-val">
+                {formatMK(getAllPaymentsWithInitial.reduce((sum, p) => sum + (p.amount || 0), 0))}
+              </span>
+              <span className="sms-audit-stat-lbl">Total Amount</span>
+            </div>
+            <div className="sms-audit-stat sms-audit-stat--purple">
+              <span className="sms-audit-stat-val">
+                {getAllPaymentsWithInitial.filter((p) => p.isInitialPayment).length}
+              </span>
+              <span className="sms-audit-stat-lbl">Initial Payments</span>
+            </div>
+            <div className="sms-audit-stat sms-audit-stat--cyan">
+              <span className="sms-audit-stat-val">
+                {getAllPaymentsWithInitial.filter((p) => !p.isInitialPayment).length}
+              </span>
+              <span className="sms-audit-stat-lbl">Additional Payments</span>
+            </div>
+            <div className="sms-audit-stat sms-audit-stat--red">
+              <span className="sms-audit-stat-val">{formatMK(auditBalanceStats.totalPending)}</span>
+              <span className="sms-audit-stat-lbl">Pending Balance</span>
+            </div>
+            <div className="sms-audit-stat sms-audit-stat--orange">
+              <span className="sms-audit-stat-val">{auditBalanceStats.withBalance}</span>
+              <span className="sms-audit-stat-lbl">Students Owing</span>
+            </div>
+          </div>
+
+          {auditBalanceStats.withBalance > 0 && (
+            <OutstandingBalancesPanel
+              students={auditBalanceStats.owing}
+              formatMK={formatMK}
+              calcTotalDue={(s) => calcTotalDueForStudent(s, courses, catalogOwnerId)}
+            />
+          )}
 
           <CTable hover responsive>
             <CTableHead>
@@ -1514,12 +1687,15 @@ const Dashboard = () => {
                 <CTableHeaderCell>Reference</CTableHeaderCell>
                 <CTableHeaderCell>Notes</CTableHeaderCell>
                 <CTableHeaderCell className="text-center">Type</CTableHeaderCell>
+                <CTableHeaderCell className="text-end">Pending Balance</CTableHeaderCell>
               </CTableRow>
             </CTableHead>
             <CTableBody>
               {paginatedPayments.map((payment) => {
                 const paymentDate = payment.paymentDate?.toDate ? format(payment.paymentDate.toDate(), 'dd/MM/yyyy HH:mm') : '—';
                 const paymentType = payment.isInitialPayment ? 'Initial' : (payment.transactionType || 'Additional');
+                const student = students.find((s) => s.id === payment.studentId);
+                const pending = student ? calcBalance(student) : null;
                 return (
                   <CTableRow key={payment.id || payment.studentId}>
                     <CTableDataCell>{paymentDate}</CTableDataCell>
@@ -1543,6 +1719,15 @@ const Dashboard = () => {
                       <CBadge color={getPaymentTypeColor(paymentType.toLowerCase())}>
                         {paymentType}
                       </CBadge>
+                    </CTableDataCell>
+                    <CTableDataCell className="text-end">
+                      {pending === null ? (
+                        '—'
+                      ) : pending <= 0 ? (
+                        <CBadge color="success">Fully paid</CBadge>
+                      ) : (
+                        <span className="fw-bold text-danger">{formatMK(pending)}</span>
+                      )}
                     </CTableDataCell>
                   </CTableRow>
                 );
@@ -1586,7 +1771,7 @@ const Dashboard = () => {
             </CAlert>
           )}
         </CModalBody>
-        <CModalFooter>
+        <CModalFooter className="sms-modal-footer">
           <CButton color="primary" onClick={exportAllPaymentsPDF}>
             <CIcon icon={cilCloudDownload} /> Export Audit PDF
           </CButton>
@@ -1675,7 +1860,7 @@ const Dashboard = () => {
                   <div className="small">
                     Course: {formatMK(courses.find(c => c.id === selectedStudent.courseId)?.fee || 0)} | 
                     Reg: {formatMK(selectedStudent.registrationFee || 0)} | 
-                    Training: {formatMK(selectedStudent.trainingFee || 0)} | 
+                    Training: {formatMK(courses.find((c) => c.id === selectedStudent.courseId)?.fee || 0)} |
                     Boarding: {formatMK(selectedStudent.boardingFee || 0)}
                   </div>
                   <div className="mt-1">
@@ -1762,7 +1947,7 @@ const Dashboard = () => {
                   <div className="small">
                     Course: {formatMK(courses.find(c => c.id === selectedStudent.courseId)?.fee || 0)} | 
                     Reg: {formatMK(selectedStudent.registrationFee || 0)} | 
-                    Training: {formatMK(selectedStudent.trainingFee || 0)} | 
+                    Training: {formatMK(courses.find((c) => c.id === selectedStudent.courseId)?.fee || 0)} |
                     Boarding: {formatMK(selectedStudent.boardingFee || 0)}
                   </div>
                   <div>
@@ -1866,6 +2051,166 @@ const Dashboard = () => {
         </CModalFooter>
       </CModal>
 
+      {/* Student Detail Modal (read-only — no edit permission required) */}
+      <CModal
+        size="lg"
+        visible={studentDetailModal}
+        onClose={() => setStudentDetailModal(false)}
+        className="sms-student-detail-modal"
+      >
+        <CModalHeader className="sms-modal-header">
+          <CModalTitle>
+            <CIcon icon={cilUser} className="me-2" />
+            Student profile
+          </CModalTitle>
+        </CModalHeader>
+        <CModalBody className="sms-modal-body">
+          {selectedStudent && (
+            <div className="sms-student-detail">
+              <div className="sms-student-detail-hero">
+                <div>
+                  <h5 className="sms-student-detail-name mb-1">{selectedStudent.name}</h5>
+                  <p className="sms-student-detail-sub mb-0">
+                    {resolveCourse(selectedStudent)?.name || 'No course'} ·{' '}
+                    {resolveCohort(selectedStudent)?.name || 'No cohort'}
+                  </p>
+                </div>
+                <StudentStatusBadge
+                  paid={calcBalance(selectedStudent) <= 0}
+                  eligible={isEligibleForEquipmentAndCertificates(
+                    selectedStudent,
+                    resolveCohort(selectedStudent),
+                    courses,
+                    catalogOwnerId,
+                  )}
+                  className="sms-student-detail-badge"
+                />
+              </div>
+
+              <StudentEligibilityBanner
+                eligible={isEligibleForEquipmentAndCertificates(
+                  selectedStudent,
+                  resolveCohort(selectedStudent),
+                  courses,
+                  catalogOwnerId,
+                )}
+                className="mb-3"
+              />
+
+              <CRow className="g-3 mb-3">
+                <CCol md={6}>
+                  <div className="sms-detail-card">
+                    <h6 className="sms-detail-card-title">Personal</h6>
+                    <dl className="sms-detail-list">
+                      <div className="sms-detail-row">
+                        <dt>Phone</dt>
+                        <dd>{selectedStudent.phoneNumber || 'N/A'}</dd>
+                      </div>
+                      <div className="sms-detail-row">
+                        <dt>Age</dt>
+                        <dd>{selectedStudent.age || 'N/A'}</dd>
+                      </div>
+                      <div className="sms-detail-row">
+                        <dt>Gender</dt>
+                        <dd>{selectedStudent.gender || 'N/A'}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </CCol>
+                <CCol md={6}>
+                  <div className="sms-detail-card">
+                    <h6 className="sms-detail-card-title">Enrollment & payment</h6>
+                    <dl className="sms-detail-list">
+                      <div className="sms-detail-row">
+                        <dt>Course</dt>
+                        <dd>{resolveCourse(selectedStudent)?.name || 'N/A'}</dd>
+                      </div>
+                      <div className="sms-detail-row">
+                        <dt>Cohort</dt>
+                        <dd>{resolveCohort(selectedStudent)?.name || 'N/A'}</dd>
+                      </div>
+                      <div className="sms-detail-row">
+                        <dt>Payment method</dt>
+                        <dd>{selectedStudent.modeOfPayment || 'N/A'}</dd>
+                      </div>
+                      <div className="sms-detail-row">
+                        <dt>Transaction ID</dt>
+                        <dd>{selectedStudent.transId || 'N/A'}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </CCol>
+              </CRow>
+
+              <div className="sms-detail-card">
+                <h6 className="sms-detail-card-title">Fee breakdown</h6>
+                <div className="sms-detail-fee-grid">
+                  <div className="sms-detail-fee-item">
+                    <span className="sms-detail-fee-lbl">Course fee</span>
+                    <span className="sms-detail-fee-val">
+                      {formatMK(getCourseFeeForStudent(selectedStudent, courses, catalogOwnerId))}
+                    </span>
+                  </div>
+                  <div className="sms-detail-fee-item">
+                    <span className="sms-detail-fee-lbl">Registration</span>
+                    <span className="sms-detail-fee-val">
+                      {formatMK(selectedStudent.registrationFee || 0)}
+                    </span>
+                  </div>
+                  <div className="sms-detail-fee-item">
+                    <span className="sms-detail-fee-lbl">Boarding</span>
+                    <span className="sms-detail-fee-val">{formatMK(selectedStudent.boardingFee || 0)}</span>
+                  </div>
+                  <div className="sms-detail-fee-item">
+                    <span className="sms-detail-fee-lbl">Paid</span>
+                    <span className="sms-detail-fee-val text-success">
+                      {formatMK(selectedStudent.amountPaid || 0)}
+                    </span>
+                  </div>
+                  <div className="sms-detail-fee-item sms-detail-fee-item--highlight">
+                    <span className="sms-detail-fee-lbl">Total due</span>
+                    <span className="sms-detail-fee-val text-warning">
+                      {formatMK(calcTotalDue(selectedStudent))}
+                    </span>
+                  </div>
+                  <div className="sms-detail-fee-item sms-detail-fee-item--highlight">
+                    <span className="sms-detail-fee-lbl">Balance</span>
+                    <span className={`sms-detail-fee-val ${calcBalance(selectedStudent) > 0 ? 'text-danger' : 'text-success'}`}>
+                      {formatMK(calcBalance(selectedStudent))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CModalBody>
+        <CModalFooter className="sms-modal-footer">
+          <CButton color="secondary" onClick={() => setStudentDetailModal(false)}>Close</CButton>
+          {canEdit && (
+            <CButton color="primary" onClick={() => {
+              setStudentDetailModal(false);
+              openEditStudent(selectedStudent);
+            }}>
+              Edit student
+            </CButton>
+          )}
+          {canCreate && (
+            <CButton color="success" onClick={() => {
+              setStudentDetailModal(false);
+              openPaymentModal(selectedStudent);
+            }}>
+              Record payment
+            </CButton>
+          )}
+          <CButton color="info" variant="outline" onClick={() => {
+            setStudentDetailModal(false);
+            openPaymentHistory(selectedStudent);
+          }}>
+            Payment history
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
       {/* Delete Confirmation Modal */}
       <CModal visible={deleteConfirmModal} onClose={() => setDeleteConfirmModal(false)}>
         <CModalHeader>
@@ -1916,11 +2261,11 @@ const Dashboard = () => {
                 <CFormLabel>Course *</CFormLabel>
                 <CFormSelect 
                   value={studentForm.courseId} 
-                  onChange={(e) => setStudentForm({ ...studentForm, courseId: e.target.value })} 
+                  onChange={(e) => setStudentForm((f) => ({ ...f, courseId: e.target.value }))}
                   invalid={!!formErrors.courseId}
                 >
                   <option value="">Select Course…</option>
-                  {courses.filter(c => c.cohortId === studentForm.cohortId).map(c => 
+                  {studentFormCourses.map(c => 
                     <option key={c.id} value={c.id}>{c.name} ({formatMK(c.fee)})</option>
                   )}
                 </CFormSelect>
@@ -1978,12 +2323,12 @@ const Dashboard = () => {
               <CCol md={4}>
                 <CFormLabel>Training Fee</CFormLabel>
                 <CFormInput 
-                  type="number" 
-                  step="0.01" 
-                  value={studentForm.trainingFee} 
-                  onChange={(e) => setStudentForm({ ...studentForm, trainingFee: e.target.value })} 
-                  placeholder="0.00"
+                  value={formCourseFee != null ? formatMK(formCourseFee) : 'Select a course first'}
+                  disabled
+                  readOnly
+                  className="bg-body-secondary"
                 />
+                <div className="form-text small">Course fee from catalog (not editable)</div>
               </CCol>
               <CCol md={4}>
                 <CFormLabel>Boarding Fee</CFormLabel>
@@ -2102,6 +2447,7 @@ const Dashboard = () => {
         filteredCohorts={filteredCohorts}
         filteredCourses={filteredCourses}
         filteredStudents={filteredStudents}
+        allStudents={students}
         courses={courses}
         cohorts={cohorts}
         totalCollected={totalCollected}
@@ -2111,12 +2457,15 @@ const Dashboard = () => {
         getCohortStatus={getCohortStatus}
         getCohortProgress={getCohortProgress}
         getCohortDuration={getCohortDuration}
+        resolveCourse={resolveCourse}
+        resolveCohort={resolveCohort}
         calcBalance={calcBalance}
         calcTotalDue={calcTotalDue}
         formatMK={formatMK}
         getPaymentMethodColor={getPaymentMethodColor}
         getPaymentTypeColor={getPaymentTypeColor}
         openStudentModal={openStudentModal}
+        openStudentDetailModal={openStudentDetailModal}
         openEditStudent={openEditStudent}
         openCourseModal={openCourseModal}
         openEditCourse={openEditCourse}
@@ -2131,6 +2480,10 @@ const Dashboard = () => {
         canCreate={canCreate}
         canEdit={canEdit}
         canDelete={canDelete}
+        canManageCatalog={false}
+        catalogOwnerId={catalogOwnerId}
+        catalogLoading={catalogResolving}
+        workspaceOwnerId={user?.uid}
         accessSummary={userProfile ? permissionsSummary(userProfile) : ''}
         permissionBlock={permissionBlock}
       />

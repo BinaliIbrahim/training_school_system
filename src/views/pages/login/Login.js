@@ -13,7 +13,7 @@ import { cilLockLocked, cilUser } from '@coreui/icons';
 import AppLogo from '../../../components/brand/AppLogo';
 import { auth, db } from '../../../firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { isSubscriptionActive } from '../../../utils/subscription';
 import { isUserApproved, APPROVAL, COORDINATOR_PERMISSIONS } from '../../../utils/permissions';
 import { recordLoginLog } from '../../../utils/loginLogs';
@@ -108,6 +108,7 @@ const Login = () => {
 
       await updateDoc(userRef, {
         lastLogin: new Date().toISOString(),
+        lastActiveAt: serverTimestamp(),
       });
 
       await recordLoginLog(user.uid, userData);

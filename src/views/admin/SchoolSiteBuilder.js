@@ -154,7 +154,7 @@ const SchoolSiteBuilderContent = () => {
       console.error(err)
       showMsg(
         err.code === 'permission-denied'
-          ? 'Publish blocked — publish firestore.rules in Firebase Console.'
+          ? 'Permission denied. Deploy the latest firestore.rules (Firebase Console → Firestore → Rules → Publish, or run: firebase deploy --only firestore:rules). Your account must have role admin or super-admin.'
           : 'Failed to save: ' + err.message,
         'danger',
       )

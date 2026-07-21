@@ -27,6 +27,8 @@ import {
 } from '@coreui/icons'
 import { format, parseISO } from 'date-fns'
 import SectionGuide from './SectionGuide'
+import { isCohortComplete } from '../../utils/schoolCatalog'
+import { StudentStatusBadge } from './StudentEligibility'
 
 const TABS = [
   { id: 'summary', label: 'Summary', icon: cilChart },
@@ -207,13 +209,19 @@ const CohortDetailPanel = ({
                 const course = allCourses.find((c) => c.id === s.courseId && c.ownerId === s.ownerId)
                 const balance = calcBalance(s)
                 const isPaid = balance <= 0
+                const eligible = isPaid && isCohortComplete(selectedCohortDetails)
+                const cardClass = eligible
+                  ? 'sms-student-card--eligible'
+                  : isPaid
+                    ? 'sms-student-card--paid'
+                    : 'sms-student-card--pending'
                 const studentPayments = getAllPaymentsWithInitial.filter(
                   (p) => p.studentId === s.id && p.ownerId === s.ownerId,
                 )
 
                 return (
                   <CCol md={6} xl={4} key={`${s.ownerId}-${s.id}`}>
-                    <div className={`sms-student-card ${isPaid ? 'sms-student-card--paid' : 'sms-student-card--pending'}`}>
+                    <div className={`sms-student-card ${cardClass}`}>
                       <div className="sms-student-card-head">
                         <div>
                           <div className="sms-student-name">{s.name}</div>
@@ -221,7 +229,7 @@ const CohortDetailPanel = ({
                             {s.age || '—'} · {s.gender || '—'}
                           </div>
                         </div>
-                        <CBadge color={isPaid ? 'success' : 'warning'}>{isPaid ? 'Paid' : 'Pending'}</CBadge>
+                        <StudentStatusBadge paid={isPaid} eligible={eligible} />
                       </div>
                       <div className="sms-student-course">{course?.name || 'No course'}</div>
                       <div className="sms-student-amounts">

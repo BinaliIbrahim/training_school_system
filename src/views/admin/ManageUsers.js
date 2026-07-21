@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { matchesSearchQuery } from '../../utils/search'
 import { useNavigate } from 'react-router-dom'
 import {
   CBadge,
@@ -197,16 +198,10 @@ const ManageUsers = () => {
   )
 
   const filteredUsers = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    const base = isSuperAdmin ? users : users
-    if (!q) return base
-    return base.filter(
-      (u) =>
-        u.fullName?.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q) ||
-        u.role?.toLowerCase().includes(q),
+    return users.filter((u) =>
+      matchesSearchQuery(search, u.fullName, u.email, u.role, u.phone),
     )
-  }, [users, search, isSuperAdmin])
+  }, [users, search])
 
   const teamMembersForTransfer = useMemo(() => {
     if (!selectedUser) return []
@@ -682,7 +677,7 @@ const ManageUsers = () => {
             <div className="sms-search flex-grow-1" style={{ maxWidth: 420 }}>
               <CIcon icon={cilSearch} className="sms-search-icon" />
               <CFormInput
-                placeholder="Search by name, email, or role..."
+                placeholder="Search name, email, role… (any word order)"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="sms-search-input"

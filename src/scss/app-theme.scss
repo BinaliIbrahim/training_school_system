@@ -804,6 +804,33 @@
     border-color: rgba(255, 255, 255, 0.08);
   }
 
+  .sms-audit-stat-val,
+  .sms-audit-stat-lbl {
+    color: inherit;
+  }
+
+  .sms-audit-stat--blue { color: #60a5fa; }
+  .sms-audit-stat--green { color: #34d399; }
+  .sms-audit-stat--purple { color: #a78bfa; }
+  .sms-audit-stat--cyan { color: #22d3ee; }
+  .sms-audit-stat--orange { color: #fbbf24; }
+  .sms-audit-stat--red { color: #f87171; }
+
+  .sms-audit-summary-item {
+    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .sms-audit-summary-item strong,
+  .sms-audit-summary-item span,
+  .sms-audit-summary-item .sms-audit-summary-val {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .sms-audit-summary-item--danger .sms-audit-summary-val {
+    color: #f87171;
+  }
+
   .sms-header-bar {
     background: rgba(15, 23, 42, 0.95);
     border-color: rgba(255, 255, 255, 0.06);
@@ -913,6 +940,175 @@
   border-top: 1px solid rgba(148, 163, 184, 0.15);
 }
 
+/* ── Student detail modal ── */
+.sms-student-detail-modal .modal-content {
+  border-radius: var(--sms-radius-lg);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  overflow: hidden;
+}
+
+.sms-student-detail-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  margin-bottom: 1rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.sms-student-detail-name {
+  font-weight: 800;
+  color: var(--cui-body-color, #0f172a);
+}
+
+.sms-student-detail-sub {
+  font-size: 0.88rem;
+  color: var(--cui-secondary-color, #64748b);
+  line-height: 1.4;
+}
+
+.sms-student-detail-badge {
+  font-size: 0.75rem;
+  padding: 0.4rem 0.65rem;
+}
+
+.sms-detail-card {
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(148, 163, 184, 0.06);
+  height: 100%;
+}
+
+.sms-detail-card-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cui-secondary-color, #64748b);
+  margin-bottom: 0.85rem;
+}
+
+.sms-detail-list {
+  margin: 0;
+}
+
+.sms-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.sms-detail-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.sms-detail-row dt {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cui-secondary-color, #64748b);
+  flex-shrink: 0;
+}
+
+.sms-detail-row dd {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--cui-body-color, #0f172a);
+  word-break: break-word;
+}
+
+.sms-detail-fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.sms-detail-fee-item {
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  text-align: center;
+}
+
+.sms-detail-fee-item--highlight {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.sms-detail-fee-lbl {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cui-secondary-color, #64748b);
+  margin-bottom: 0.35rem;
+}
+
+.sms-detail-fee-val {
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--cui-body-color, #0f172a);
+  line-height: 1.2;
+}
+
+[data-coreui-theme='dark'] .sms-student-detail-name,
+[data-coreui-theme='dark'] .sms-detail-row dd,
+[data-coreui-theme='dark'] .sms-detail-fee-val {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+[data-coreui-theme='dark'] .sms-student-detail-sub,
+[data-coreui-theme='dark'] .sms-detail-card-title,
+[data-coreui-theme='dark'] .sms-detail-row dt,
+[data-coreui-theme='dark'] .sms-detail-fee-lbl {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-coreui-theme='dark'] .sms-detail-card {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(148, 163, 184, 0.15);
+}
+
+[data-coreui-theme='dark'] .sms-detail-fee-item {
+  background: rgba(15, 23, 42, 0.4);
+  border-color: rgba(148, 163, 184, 0.15);
+}
+
+[data-coreui-theme='dark'] .sms-detail-fee-item--highlight {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+[data-coreui-theme='dark'] .sms-student-detail-hero {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(6, 182, 212, 0.1));
+}
+
+[data-coreui-theme='dark'] .sms-detail-fee-val.text-success {
+  color: #34d399 !important;
+}
+
+[data-coreui-theme='dark'] .sms-detail-fee-val.text-warning {
+  color: #fbbf24 !important;
+}
+
+[data-coreui-theme='dark'] .sms-detail-fee-val.text-danger {
+  color: #f87171 !important;
+}
+
 .sms-audit-tabs .nav-link {
   border-radius: 12px !important;
   font-weight: 600;
@@ -959,6 +1155,46 @@
 .sms-audit-stat--cyan { background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(6, 182, 212, 0.05)); color: #06b6d4; }
 .sms-audit-stat--orange { background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05)); color: #f59e0b; }
 .sms-audit-stat--red { background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05)); color: #ef4444; }
+
+.sms-audit-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.sms-audit-summary-item {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  text-align: center;
+  background: rgba(248, 250, 252, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.sms-audit-summary-item strong,
+.sms-audit-summary-item span {
+  color: #0f172a;
+}
+
+.sms-audit-summary-item .sms-audit-summary-val {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #0f172a;
+  margin-top: 0.15rem;
+}
+
+.sms-audit-summary-item--danger .sms-audit-summary-val {
+  color: #dc2626;
+}
+
+.sms-audit-payments-table {
+  border-radius: var(--sms-radius);
+  overflow: hidden;
+}
+
+[data-coreui-theme='dark'] .sms-audit-payments-table {
+  --cui-table-bg: rgba(30, 41, 59, 0.5);
+}
 
 .sms-payment-card {
   padding: 1.25rem;
@@ -2023,6 +2259,34 @@
   border-color: rgba(99, 102, 241, 0.35);
 }
 
+.sms-cohort-card--secondary {
+  border-style: dashed;
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.06);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+}
+
+.sms-cohort-card--secondary:hover {
+  border-color: rgba(148, 163, 184, 0.55);
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.sms-other-cohorts-card {
+  justify-content: center;
+  min-height: 220px;
+}
+
+.sms-other-cohorts-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  opacity: 0.7;
+}
+
 .sms-cohort-card-top {
   display: flex;
   justify-content: space-between;
@@ -2069,6 +2333,18 @@
   font-size: 0.7rem;
   text-transform: uppercase;
   opacity: 0.65;
+  color: var(--cui-secondary-color);
+}
+
+[data-coreui-theme='dark'] .sms-cohort-metric-lbl,
+[data-coreui-theme='dark'] .sms-user-metrics .lbl,
+[data-coreui-theme='dark'] .sms-user-finance .lbl {
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 1;
+}
+
+[data-coreui-theme='dark'] .sms-cohort-metric-val {
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .sms-cohort-actions {
@@ -2192,6 +2468,22 @@
 
 .sms-student-card--pending {
   border-left: 4px solid #f59e0b;
+}
+
+.sms-student-card--eligible {
+  border-left: 4px solid #06b6d4;
+  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.15);
+}
+
+.sms-eligibility-badge {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sms-eligibility-banner {
+  border-radius: 12px;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(99, 102, 241, 0.08));
 }
 
 .sms-student-card-head {
@@ -2674,6 +2966,168 @@
 [data-coreui-theme='dark'] .sms-control-team-row,
 [data-coreui-theme='dark'] .sms-control-alert-row {
   background: rgba(99, 102, 241, 0.08);
+}
+
+.sms-team-hub {
+  animation: sms-fade-up 0.35s ease-out;
+}
+
+.sms-finance-hub {
+  padding: 1.25rem;
+  border-radius: var(--sms-radius-lg);
+  background: var(--cui-body-bg);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+}
+
+.sms-finance-collection-progress {
+  height: 8px;
+  border-radius: 999px;
+}
+
+.sms-finance-member-bar {
+  margin-bottom: 0.85rem;
+}
+
+.sms-finance-member-bar:last-child {
+  margin-bottom: 0;
+}
+
+.sms-finance-stacked-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.sms-finance-stacked-collected {
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.3s ease;
+}
+
+.sms-finance-stacked-balance {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+  transition: width 0.3s ease;
+}
+
+.sms-finance-compare-table {
+  border-radius: var(--sms-radius);
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.sms-finance-compare-total {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+[data-coreui-theme='dark'] .sms-finance-hub {
+  background: rgba(30, 41, 59, 0.65);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-coreui-theme='dark'] .sms-finance-compare-table {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-coreui-theme='dark'] .sms-finance-compare-total {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.sms-user-card {
+  padding: 1.25rem;
+  border-radius: var(--sms-radius);
+  background: var(--cui-body-bg);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  height: 100%;
+}
+
+.sms-user-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sms-shadow);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.sms-user-card--alert {
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.sms-user-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sms-user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  flex-shrink: 0;
+}
+
+.sms-user-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.sms-user-meta {
+  font-size: 0.8rem;
+  color: var(--cui-secondary-color);
+}
+
+.sms-user-metrics,
+.sms-user-finance {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.sms-user-finance {
+  grid-template-columns: repeat(2, 1fr);
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.sms-user-metrics .val,
+.sms-user-finance .val {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.sms-user-metrics .lbl,
+.sms-user-finance .lbl {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--cui-secondary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sms-user-alert {
+  font-size: 0.8rem;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.sms-cohort-card--balance {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+[data-coreui-theme='dark'] .sms-user-card {
+  background: rgba(30, 41, 59, 0.6);
 }
 
 /* ── Coordinator dashboard ── */
@@ -3374,6 +3828,243 @@
   letter-spacing: 0.04em;
   color: var(--cui-body-color-secondary, #64748b);
   border-bottom-width: 1px;
+}
+
+.sms-presence-dot {
+  display: inline-block;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #94a3b8;
+}
+
+.sms-presence-dot--sm {
+  width: 8px;
+  height: 8px;
+}
+
+.sms-presence-dot--md {
+  width: 10px;
+  height: 10px;
+}
+
+.sms-presence-dot--lg {
+  width: 14px;
+  height: 14px;
+}
+
+.sms-presence-dot.is-online {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+  animation: sms-presence-pulse 2s ease-in-out infinite;
+}
+
+.sms-presence-dot.is-offline {
+  background: #64748b;
+}
+
+@keyframes sms-presence-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25); }
+  50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12); }
+}
+
+.sms-team-presence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.sms-presence-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.sms-presence-card.is-active {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.sms-presence-avatar {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(6, 182, 212, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sms-presence-avatar-text {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #6366f1;
+}
+
+.sms-presence-avatar .sms-presence-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  border: 2px solid var(--cui-body-bg, #0f172a);
+}
+
+.sms-presence-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sms-presence-info strong {
+  display: block;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sms-presence-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sms-log-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #64748b;
+}
+
+.sms-log-status.is-online {
+  color: #22c55e;
+}
+
+.sms-log-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6366f1;
+}
+
+.sms-stat-icon .sms-presence-dot.is-online {
+  animation: sms-presence-pulse 2s ease-in-out infinite;
+}
+
+[data-coreui-theme='dark'] .sms-presence-avatar .sms-presence-dot {
+  border-color: #1e293b;
+}
+
+[data-coreui-theme='dark'] .sms-presence-avatar-text {
+  color: #a5b4fc;
+}
+
+/* ── Outstanding balance cards (payment audit) ── */
+.sms-balance-panel {
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.sms-balance-cards-grid {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.sms-balance-card {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  height: 100%;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.sms-balance-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.sms-balance-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sms-balance-card-name {
+  font-size: 0.88rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sms-balance-card-badge {
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.sms-balance-card-amount {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #ef4444;
+  line-height: 1.2;
+}
+
+.sms-balance-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  margin-top: 0.35rem;
+  color: var(--cui-secondary-color);
+}
+
+.sms-balance-card-progress {
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(148, 163, 184, 0.2);
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.sms-balance-card-progress-bar {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #10b981, #22c55e);
+}
+
+[data-coreui-theme='dark'] .sms-balance-panel {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+[data-coreui-theme='dark'] .sms-balance-card {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+[data-coreui-theme='dark'] .sms-balance-card-amount {
+  color: #f87171;
+}
+
+.sms-search--compact .sms-search-input {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  font-size: 0.85rem;
 }
 
 /* ══════════════════════════════════════════════════════════════

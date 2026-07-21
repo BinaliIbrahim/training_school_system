@@ -1,8 +1,11 @@
 import React from 'react'
 import { ToastProvider } from '../context/ToastContext'
 import { AppContent, AppSidebar, AppFooter, AppHeader, MobileTabBar } from '../components/index'
+import useUserPresence from '../hooks/useUserPresence'
 
 const DefaultLayout = () => {
+  useUserPresence()
+
   return (
     <ToastProvider>
       <div className="sms-app-shell">
