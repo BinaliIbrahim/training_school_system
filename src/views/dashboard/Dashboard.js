@@ -2186,6 +2186,19 @@ const Dashboard = () => {
         </CModalBody>
         <CModalFooter className="sms-modal-footer">
           <CButton color="secondary" onClick={() => setStudentDetailModal(false)}>Close</CButton>
+          {canDelete && selectedStudent && (
+            <CButton
+              color="danger"
+              variant="outline"
+              className="me-auto"
+              onClick={() => {
+                setStudentDetailModal(false);
+                openDeleteConfirm(selectedStudent, 'student');
+              }}
+            >
+              <CIcon icon={cilTrash} className="me-1" /> Delete
+            </CButton>
+          )}
           {canEdit && (
             <CButton color="primary" onClick={() => {
               setStudentDetailModal(false);

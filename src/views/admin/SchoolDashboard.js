@@ -2058,6 +2058,9 @@ const SchoolDashboard = () => {
                     <CTableHeaderCell>Reference</CTableHeaderCell>
                     <CTableHeaderCell>Notes</CTableHeaderCell>
                     <CTableHeaderCell>Type</CTableHeaderCell>
+                    {(canEdit || canDelete) && (
+                      <CTableHeaderCell className="text-center">Actions</CTableHeaderCell>
+                    )}
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
@@ -2095,6 +2098,34 @@ const SchoolDashboard = () => {
                               {paymentType}
                             </CBadge>
                           </CTableDataCell>
+                          {(canEdit || canDelete) && (
+                            <CTableDataCell className="text-center">
+                              {!payment.isInitialPayment && canEdit && (
+                                <CButton
+                                  size="sm"
+                                  color="primary"
+                                  variant="ghost"
+                                  className="me-1"
+                                  onClick={() => openEditPayment(payment)}
+                                >
+                                  Edit
+                                </CButton>
+                              )}
+                              {!payment.isInitialPayment && canDelete && (
+                                <CButton
+                                  size="sm"
+                                  color="danger"
+                                  variant="ghost"
+                                  onClick={() => openDeleteConfirm(payment, 'payment')}
+                                >
+                                  Delete
+                                </CButton>
+                              )}
+                              {payment.isInitialPayment && (
+                                <span className="small text-muted">Edit student</span>
+                              )}
+                            </CTableDataCell>
+                          )}
                         </CTableRow>
                       );
                     })}
@@ -2263,6 +2294,19 @@ const SchoolDashboard = () => {
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setStudentDetailModal(false)}>Close</CButton>
+          {canDelete && selectedStudent && (
+            <CButton
+              color="danger"
+              variant="outline"
+              className="me-auto"
+              onClick={() => {
+                setStudentDetailModal(false);
+                openDeleteConfirm(selectedStudent, 'student');
+              }}
+            >
+              <CIcon icon={cilTrash} className="me-1" /> Delete
+            </CButton>
+          )}
           {canEdit && (
               <CButton color="primary" onClick={() => {
                 setStudentDetailModal(false);

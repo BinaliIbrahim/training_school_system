@@ -10,6 +10,7 @@ import {
   CDropdownToggle,
   CDropdownMenu,
   CDropdownItem,
+  CDropdownDivider,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
@@ -260,16 +261,25 @@ const CohortDetailPanel = ({
                           <CDropdownItem onClick={() => openStudentDetailModal(s)}>
                             <CIcon icon={cilUser} className="me-2" /> View details
                           </CDropdownItem>
-                          {canEdit && (
-                              <CDropdownItem onClick={() => openEditStudent(s)}>
-                                <CIcon icon={cilPencil} className="me-2" /> Edit
-                              </CDropdownItem>
-                          )}
                           {canCreate && (
                               <CDropdownItem onClick={() => openPaymentModal(s)}>
                                 <CIcon icon={cilMoney} className="me-2" /> Record payment
                               </CDropdownItem>
                           )}
+                          {canEdit && (
+                              <CDropdownItem onClick={() => openEditStudent(s)}>
+                                <CIcon icon={cilPencil} className="me-2" /> Edit
+                              </CDropdownItem>
+                          )}
+                          {canDelete && (
+                            <CDropdownItem
+                              className="text-danger"
+                              onClick={() => openDeleteConfirm(s, 'student')}
+                            >
+                              <CIcon icon={cilTrash} className="me-2" /> Delete student
+                            </CDropdownItem>
+                          )}
+                          {(canEdit || canCreate || canDelete) && <CDropdownDivider />}
                           <CDropdownItem onClick={() => openPaymentHistory(s)}>
                             <CIcon icon={cilList} className="me-2" /> Payment history
                           </CDropdownItem>
