@@ -5,6 +5,7 @@ import {
   CBadge,
   CButton,
   CCol,
+  CFormSelect,
   CProgress,
   CRow,
   CSpinner,
@@ -39,6 +40,7 @@ import {
 } from '../../utils/schoolCatalog'
 import { partitionCohortsForDisplay } from '../../utils/cohortDisplay'
 import { APPROVAL, approvalLabel, permissionsSummary } from '../../utils/permissions'
+import { getRoleLabel, formatTeamMemberLabel } from '../../constants/roles'
 
 const formatMK = (amount) =>
   new Intl.NumberFormat('en-MW', {
@@ -46,6 +48,8 @@ const formatMK = (amount) =>
     currency: 'MWK',
     minimumFractionDigits: 0,
   }).format(amount || 0)
+
+const UNASSIGNED_DISTRICT = '__unassigned__'
 
 const getCohortStatus = (cohort) => {
   if (!cohort?.startDate || !cohort?.endDate) return { text: 'Unknown', color: 'secondary' }
@@ -97,6 +101,7 @@ const AdminTeamHub = ({ teamUsers = [], catalogOwnerId = null }) => {
   const [selectedUser, setSelectedUser] = useState(null)
   const [selectedCohort, setSelectedCohort] = useState(null)
   const [showOtherCohorts, setShowOtherCohorts] = useState(false)
+  const [filterDistrict, setFilterDistrict] = useState('')
 
   useEffect(() => {
     setShowOtherCohorts(false)
@@ -252,6 +257,39 @@ const AdminTeamHub = ({ teamUsers = [], catalogOwnerId = null }) => {
       }
     })
   }, [teamUsers, students, courses, payments, catalogOwnerId])
+
+  const districtOptions = useMemo(() => {
+    const districts = new Set()
+    let hasUnassigned = false
+    teamUsers.forEach((u) => {
+      if (u.district) districts.add(u.district)
+      else hasUnassigned = true
+    })
+    return { districts: [...districts].sort((a, b) => a.localeCompare(b)), hasUnassigned }
+  }, [teamUsers])
+
+  const userMatchesDistrictFilter = useCallback(
+    (user) => {
+      if (!filterDistrict) return true
+      if (filterDistrict === UNASSIGNED_DISTRICT) return !user.district
+      return user.district === filterDistrict
+    },
+    [filterDistrict],
+  )
+
+  const visibleUserStats = useMemo(
+    () => userStats.filter(userMatchesDistrictFilter),
+    [userStats, userMatchesDistrictFilter],
+  )
+
+  const visibleTeamFinance = useMemo(
+    () =>
+      teamFinance.filter((row) => {
+        const member = teamUsers.find((u) => u.id === row.userId)
+        return member ? userMatchesDistrictFilter(member) : true
+      }),
+    [teamFinance, teamUsers, userMatchesDistrictFilter],
+  )
 
   const userCohorts = useMemo(() => {
     if (!selectedUser) return []
@@ -432,7 +470,7 @@ const AdminTeamHub = ({ teamUsers = [], catalogOwnerId = null }) => {
 
   return (
     <div className="sms-team-hub mb-4">
-      <AdminFinanceSummary teamFinance={teamFinance} />
+      <AdminFinanceSummary teamFinance={visibleTeamFinance} />
 
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
@@ -442,7 +480,7 @@ const AdminTeamHub = ({ teamUsers = [], catalogOwnerId = null }) => {
               : showOtherCohorts && selectedUser
                 ? 'Other cohorts'
                 : selectedUser
-                  ? `${selectedUser.fullName || selectedUser.email}'s cohorts`
+                  ? `${formatTeamMemberLabel(selectedUser, { includeRole: false })} — cohorts`
                   : 'Your team'}
           </h5>
           <p className="text-muted small mb-0">
@@ -455,7 +493,26 @@ const AdminTeamHub = ({ teamUsers = [], catalogOwnerId = null }) => {
                   : 'Assigned users — click a card to drill into cohorts and payments.'}
           </p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex flex-wrap gap-2 align-items-center">
+          {!selectedUser && (districtOptions.districts.length > 0 || districtOptions.hasUnassigned) && (
+            <CFormSelect
+              size="sm"
+              className="sms-team-district-filter"
+              style={{ maxWidth: 200 }}
+              value={filterDistrict}
+              onChange={(e) => setFilterDistrict(e.target.value)}
+            >
+              <option value="">All districts</option>
+              {districtOptions.districts.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+              {districtOptions.hasUnassigned && (
+                <option value={UNASSIGNED_DISTRICT}>Unassigned</option>
+              )}
+            </CFormSelect>
+          )}
           {selectedUser && (
             <CButton color="secondary" variant="outline" size="sm" onClick={handleHubBack}>
               <CIcon icon={cilArrowLeft} className="me-1" />
@@ -470,7 +527,14 @@ const AdminTeamHub = ({ teamUsers = [], catalogOwnerId = null }) => {
 
       {!selectedUser && (
         <CRow className="g-3">
-          {userStats.map((user) => {
+          {visibleUserStats.length === 0 ? (
+            <CCol xs={12}>
+              <CAlert color="info" className="mb-0">
+                No team members match this district filter.
+              </CAlert>
+            </CCol>
+          ) : (
+          visibleUserStats.map((user) => {
             const approval = approvalLabel(user.approvalStatus || APPROVAL.APPROVED)
             return (
               <CCol xs={12} md={6} xl={4} key={user.id}>
@@ -487,7 +551,11 @@ const AdminTeamHub = ({ teamUsers = [], catalogOwnerId = null }) => {
                     </div>
                     <div className="flex-grow-1">
                       <div className="sms-user-name">{user.fullName || user.email}</div>
-                      <div className="sms-user-meta">{user.role} · {user.email}</div>
+                      <div className="sms-user-meta">
+                        {getRoleLabel(user.role)}
+                        {user.district ? ` · ${user.district}` : ''}
+                        {user.email ? ` · ${user.email}` : ''}
+                      </div>
                     </div>
                     {user.approvalStatus === APPROVAL.PENDING ? (
                       <CBadge color="warning">Pending</CBadge>
@@ -547,7 +615,8 @@ const AdminTeamHub = ({ teamUsers = [], catalogOwnerId = null }) => {
                 </div>
               </CCol>
             )
-          })}
+          })
+          )}
         </CRow>
       )}
 

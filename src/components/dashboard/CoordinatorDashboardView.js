@@ -227,6 +227,7 @@ const CoordinatorDashboardView = ({
   canDelete = false,
   accessSummary = '',
   permissionBlock = '',
+  operatingDistrict = '',
 }) => {
   const [showOtherCohorts, setShowOtherCohorts] = useState(false)
   const [selectedCohort, setSelectedCohort] = useState(null)
@@ -369,6 +370,11 @@ const CoordinatorDashboardView = ({
           <p className="text-muted mb-0">
             Open a cohort to manage its students and courses — everything stays grouped by intake.
           </p>
+          {operatingDistrict && (
+            <CBadge color="light" className="text-dark border mt-2 me-2">
+              Operating in {operatingDistrict}
+            </CBadge>
+          )}
           {accessSummary && accessSummary !== 'Full access' && (
             <CBadge color="info" className="mt-2">
               Your access: {accessSummary}

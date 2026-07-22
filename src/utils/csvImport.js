@@ -188,6 +188,7 @@ async function commitBatch(db, ops) {
 function buildUserPayload(row, profile) {
   const payload = {}
   if (row.fullName) payload.fullName = row.fullName
+  if (row.district) payload.district = row.district
   if (row.schoolName) payload.schoolName = row.schoolName
   if (row.siteSlug) payload.siteSlug = row.siteSlug
 

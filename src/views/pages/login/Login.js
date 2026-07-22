@@ -15,17 +15,11 @@ import { auth, db } from '../../../firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { isSubscriptionActive } from '../../../utils/subscription';
-import { isUserApproved, APPROVAL, COORDINATOR_PERMISSIONS } from '../../../utils/permissions';
+import { isUserApproved, APPROVAL } from '../../../utils/permissions';
 import { recordLoginLog } from '../../../utils/loginLogs';
+import { PRIVILEGED_LOGIN_ROLES, getHomeRouteForRole, getDefaultPermissionsForRole } from '../../../constants/roles';
 
-const getHomeRoute = (role) => {
-  const routes = {
-    'super-admin': '/admin/control',
-    admin: '/admin/control',
-    teacher: '/team',
-  };
-  return routes[role] || '/dashboard';
-};
+const getHomeRoute = getHomeRouteForRole;
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -83,13 +77,15 @@ const Login = () => {
         !userData.permissions &&
         !['admin', 'super-admin'].includes(userData.role)
       ) {
+        const defaultPerms = getDefaultPermissionsForRole(userData.role)
+        const canWrite = defaultPerms.create || defaultPerms.edit || defaultPerms.delete
         try {
           await updateDoc(userRef, {
-            permissions: { ...COORDINATOR_PERMISSIONS },
-            canWrite: true,
+            permissions: { ...defaultPerms },
+            canWrite,
           });
-          userData.permissions = { ...COORDINATOR_PERMISSIONS };
-          userData.canWrite = true;
+          userData.permissions = { ...defaultPerms };
+          userData.canWrite = canWrite;
         } catch (_) {
           /* rules may not be deployed yet — super-admin can set permissions manually */
         }
@@ -124,7 +120,7 @@ const Login = () => {
 
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
-      const privilegedRoles = ['super-admin', 'admin', 'teacher'];
+      const privilegedRoles = PRIVILEGED_LOGIN_ROLES;
       if (privilegedRoles.includes(userData.role)) {
         if (userData.role === 'admin' && !isSubscriptionActive(userData.subscriptionenddate)) {
           navigate('/subscription', {

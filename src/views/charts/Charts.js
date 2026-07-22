@@ -22,6 +22,7 @@ import {
   resolveCatalogOwnerId,
 } from '../../utils/schoolCatalog'
 import { modernChartOptions, lineChartDataset, barChartDataset, formatMK as fmtMK } from '../../utils/chartTheme'
+import { SCHOOL_TEAM_ROLES } from '../../constants/roles'
 
 const formatMK = fmtMK
 
@@ -79,6 +80,21 @@ const Charts = () => {
           const catalogId = await resolveCatalogOwnerId(db, profile, data.role, firebaseUser.uid)
           setCatalogOwnerId(catalogId)
           await loadCoordinatorData(firebaseUser.uid, catalogId)
+        } else if (SCHOOL_TEAM_ROLES.includes(data.role)) {
+          setSubscriptionOk(true)
+          const catalogId = await resolveCatalogOwnerId(db, profile, data.role, firebaseUser.uid)
+          if (data.managedBy) {
+            const adminDoc = await getDoc(doc(db, 'users', data.managedBy))
+            if (adminDoc.exists()) {
+              await loadManagedUsers('admin', data.managedBy, adminDoc.data().managedUserIds)
+            } else {
+              setCatalogOwnerId(catalogId)
+              await loadCoordinatorData(firebaseUser.uid, catalogId)
+            }
+          } else {
+            setCatalogOwnerId(catalogId)
+            await loadCoordinatorData(firebaseUser.uid, catalogId)
+          }
         } else if (['admin', 'super-admin'].includes(data.role)) {
           await loadManagedUsers(data.role, firebaseUser.uid, data.managedUserIds)
         }

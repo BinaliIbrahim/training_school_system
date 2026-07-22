@@ -16,6 +16,7 @@ import AppLogo from './brand/AppLogo'
 
 import { useAuth } from '../hooks/useAuth'
 import { getNavigationForRole, defaultNavigation } from '../config/navigation'
+import { getHomeRouteForRole } from '../constants/roles'
 
 const AppSidebar = () => {
   const dispatch = useDispatch()
@@ -23,12 +24,7 @@ const AppSidebar = () => {
   const sidebarShow = useSelector((state) => state.sidebarShow)
   const { role, loading } = useAuth()
 
-  const brandTo =
-    role === 'super-admin' || role === 'admin'
-      ? '/admin/control'
-      : role === 'teacher'
-        ? '/team'
-        : '/dashboard'
+  const brandTo = getHomeRouteForRole(role) || '/dashboard'
 
   const navigation = loading || !role ? defaultNavigation : getNavigationForRole(role)
 

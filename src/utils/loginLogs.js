@@ -129,6 +129,8 @@ export const roleBadgeColor = (role) => {
     'super-admin': 'danger',
     teacher: 'info',
     student: 'success',
+    accounts: 'warning',
+    procurement: 'dark',
     parent: 'secondary',
   }
   return map[role] || 'light'

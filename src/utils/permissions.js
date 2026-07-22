@@ -82,6 +82,9 @@ export const permissionsSummary = (profile) => {
   return parts.length ? parts.join(' · ') : 'View only'
 }
 
+/** Whether this role is read-only on the school dashboard (unless admin grants CRUD) */
+export const isReadOnlySchoolRole = (role) => role === 'teacher' || role === 'parent'
+
 export const permissionsFromForm = (form) => ({
   create: !!form.create,
   edit: !!form.edit,

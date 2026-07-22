@@ -48,12 +48,9 @@ import {
 } from '../../utils/subscription'
 import PwaInstallBanner from '../../components/PwaInstallBanner'
 import AdminTeamHub from '../../components/dashboard/AdminTeamHub'
-import BackupDownloadButton from '../../components/dashboard/BackupDownloadButton'
-import BackupImportButton from '../../components/dashboard/BackupImportButton'
 import AdminQuickStart from '../../components/dashboard/AdminQuickStart'
 import AnimatedNumber from '../../components/engagement/AnimatedNumber'
-import { fetchSchoolBackupData } from '../../utils/csvBackup'
-import { useAppToast } from '../../hooks/useAppToast'
+import { getRoleLabel } from '../../constants/roles'
 
 const toDate = (value) => toJsDate(value)
 
@@ -109,7 +106,6 @@ const StatCard = ({ label, value, sub, icon, color = 'primary' }) => (
 
 const ControlCenter = () => {
   const navigate = useNavigate()
-  const appToast = useAppToast()
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
   const [users, setUsers] = useState([])
@@ -324,41 +320,6 @@ const ControlCenter = () => {
 
       <AdminQuickStart role={profile?.role} />
 
-      <CCard className="mb-4 border-0 sms-backup-panel">
-        <CCardBody className="d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
-          <div>
-            <h6 className="fw-bold mb-1">Full system backup</h6>
-            <p className="text-muted small mb-0">
-              {isSuperAdmin
-                ? 'Export or restore all platform data as CSV files in a ZIP — users, students, courses, cohorts, payments, and public sites.'
-                : 'Export or restore your school data as CSV files in a ZIP — team accounts, students, catalog, payments, and your public site.'}
-            </p>
-          </div>
-          <div className="d-flex flex-wrap gap-2">
-            <BackupDownloadButton
-              color={isSuperAdmin ? 'danger' : 'primary'}
-              variant="solid"
-              size="sm"
-              label="Download backup ZIP"
-              onBackup={() => fetchSchoolBackupData(db, profile)}
-              onSuccess={(msg) => appToast.success(msg)}
-              onError={(msg) => appToast.error(msg)}
-            />
-            <BackupImportButton
-              db={db}
-              profile={profile}
-              color={isSuperAdmin ? 'danger' : 'primary'}
-              variant="outline"
-              size="sm"
-              label="Import backup ZIP"
-              onSuccess={(msg) => appToast.success(msg)}
-              onError={(msg) => appToast.error(msg)}
-              onComplete={() => loadData(profile)}
-            />
-          </div>
-        </CCardBody>
-      </CCard>
-
       <PwaInstallBanner />
 
       {isAdmin && metrics && !metrics.subscriptionActive && (
@@ -510,7 +471,8 @@ const ControlCenter = () => {
                       <div key={u.id} className="sms-control-alert-row mb-2">
                         <strong>{u.fullName}</strong>
                         <div className="small text-muted">
-                          Created by admin · {u.role}
+                          Created by admin · {getRoleLabel(u.role)}
+                          {u.district ? ` · ${u.district}` : ''}
                         </div>
                       </div>
                     ))

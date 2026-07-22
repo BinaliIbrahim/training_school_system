@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { CAlert, CButton } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilCloudDownload, cilX } from '@coreui/icons'
+import { isPwaInstalled } from '../utils/pwa'
 
 const DISMISS_KEY = 'sms-pwa-install-dismissed'
 
@@ -11,7 +12,7 @@ const PwaInstallBanner = ({ compact = false }) => {
   const [installed, setInstalled] = useState(false)
 
   useEffect(() => {
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (isPwaInstalled()) {
       setInstalled(true)
       return undefined
     }

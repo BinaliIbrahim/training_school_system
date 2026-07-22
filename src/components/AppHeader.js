@@ -48,6 +48,7 @@ import { useBrowserPush } from '../hooks/useBrowserPush'
 import { useProfilePhoto } from '../hooks/useProfilePhoto'
 import { useAuth } from '../hooks/useAuth'
 import { useUserPreferences } from '../hooks/useUserPreferences'
+import { SCHOOL_TEAM_ROLES } from '../constants/roles'
 import AppLogo from './brand/AppLogo'
 
 const getQuickNav = (role) => {
@@ -65,7 +66,7 @@ const getQuickNav = (role) => {
       { to: '/charts', label: 'Analytics', icon: cilChartPie },
     ]
   }
-  if (role === 'teacher') {
+  if (SCHOOL_TEAM_ROLES.includes(role)) {
     return [
       { to: '/team', label: 'My School', icon: cilLibrary },
       { to: '/charts', label: 'Analytics', icon: cilChartPie },

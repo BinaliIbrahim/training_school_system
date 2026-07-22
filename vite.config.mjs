@@ -43,7 +43,7 @@ export default defineConfig(() => {
           display: 'standalone',
           orientation: 'portrait-primary',
           scope: '/',
-          start_url: '/',
+          start_url: '/login',
           categories: ['education', 'business', 'productivity'],
           icons: [
             {

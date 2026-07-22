@@ -12,7 +12,7 @@ const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'))
 // Pages
 const Login = React.lazy(() => import('./views/pages/login/Login'))
 const Subscription = React.lazy(() => import('./views/pages/login/Subscription'))
-const LandingPage = React.lazy(() => import('./views/pages/login/Landing'))
+const RootEntry = React.lazy(() => import('./components/RootEntry'))
 const Register = React.lazy(() => import('./views/pages/register/Register'))
 const PublicSchoolSite = React.lazy(() => import('./views/public/PublicSchoolSite'))
 const Page404 = React.lazy(() => import('./views/pages/page404/Page404'))
@@ -46,7 +46,7 @@ const App = () => {
         }
       >
         <Routes>
-          <Route exact path="/" name="Landing Page" element={<LandingPage />} />
+          <Route exact path="/" name="Landing Page" element={<RootEntry />} />
           <Route exact path="/login" name="Login Page" element={<Login />} />
           <Route exact path="/subscription" name="Subscription Page" element={<Subscription />} />
           <Route exact path="/register" name="Register Page" element={<Register />} />

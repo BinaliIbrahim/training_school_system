@@ -13,6 +13,7 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilChart, cilPeople, cilBook, cilCalendar, cilMoney } from '@coreui/icons'
+import { getRoleBadgeColor, getRoleLabel } from '../../constants/roles'
 
 const formatMK = (amount) =>
   new Intl.NumberFormat('en-MW', {
@@ -84,16 +85,8 @@ const UserStatsModal = ({ visible, onClose, user, getOwnerBadgeColor }) => {
               </div>
               <div className="sms-info-row">
                 <span>Role</span>
-                <CBadge
-                  color={
-                    user.role === 'super-admin'
-                      ? 'danger'
-                      : user.role === 'admin'
-                        ? 'warning'
-                        : 'secondary'
-                  }
-                >
-                  {user.role}
+                <CBadge color={getRoleBadgeColor(user.role)}>
+                  {getRoleLabel(user.role)}
                 </CBadge>
               </div>
               <div className="sms-info-row">

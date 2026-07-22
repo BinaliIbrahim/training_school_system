@@ -12,6 +12,7 @@ import {
   cilMenu,
 } from '@coreui/icons'
 import { useAuth } from '../hooks/useAuth'
+import { SCHOOL_TEAM_ROLES } from '../constants/roles'
 
 const getTabs = (role) => {
   if (role === 'super-admin') {
@@ -32,7 +33,7 @@ const getTabs = (role) => {
       { action: 'menu', icon: cilMenu, label: 'Menu' },
     ]
   }
-  if (role === 'teacher') {
+  if (SCHOOL_TEAM_ROLES.includes(role)) {
     return [
       { to: '/team', icon: cilLibrary, label: 'School' },
       { to: '/charts', icon: cilChartPie, label: 'Stats' },

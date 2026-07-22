@@ -2,7 +2,7 @@
   "name": "SMS Pro — School Management",
   "short_name": "SMS Pro",
   "description": "Manage students, cohorts, courses, payments, and your team.",
-  "start_url": "./",
+  "start_url": "./login",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

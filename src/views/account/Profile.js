@@ -6,6 +6,7 @@ import {
   CButton,
   CFormInput,
   CFormLabel,
+  CFormSelect,
   CAlert,
   CSpinner,
   CAvatar,
@@ -37,19 +38,31 @@ import {
   isSubscriptionActive,
   toJsDate,
 } from '../../utils/subscription'
+import { MALAWI_DISTRICTS } from '../../constants/districts'
+import {
+  getRoleLabel,
+  getRoleBadgeColor,
+  getHomeRouteForRole,
+  getWorkspaceRouteForRole,
+  roleUsesDistrict,
+  SCHOOL_DASHBOARD_ROLES,
+} from '../../constants/roles'
 
 const ROLE_COLORS = {
   'super-admin': 'danger',
   admin: 'warning',
   teacher: 'info',
-  student: 'secondary',
+  student: 'success',
+  accounts: 'warning',
+  procurement: 'dark',
+  parent: 'secondary',
 }
 
 const ProfileContent = () => {
   const { user, profile, role, loading: authLoading } = useAuth()
   const { photoURL, uploading, error: photoError, openFilePicker, handleFileChange, fileInputRef, clearError } =
     useProfilePhoto()
-  const [form, setForm] = useState({ fullName: '', phone: '' })
+  const [form, setForm] = useState({ fullName: '', phone: '', district: '' })
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [stats, setStats] = useState({ students: 0, courses: 0, cohorts: 0, payments: 0 })
@@ -61,6 +74,7 @@ const ProfileContent = () => {
       setForm({
         fullName: profile.fullName || '',
         phone: profile.phone || '',
+        district: profile.district || '',
       })
     }
   }, [profile])
@@ -107,13 +121,22 @@ const ProfileContent = () => {
       return
     }
 
+    if (roleUsesDistrict(role) && !form.district) {
+      showToast('Select the district you operate in', 'danger')
+      return
+    }
+
     setSaving(true)
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      const payload = {
         fullName: form.fullName.trim(),
         phone: form.phone || null,
         profileComplete: true,
-      })
+      }
+      if (roleUsesDistrict(role)) {
+        payload.district = form.district
+      }
+      await updateDoc(doc(db, 'users', user.uid), payload)
       showToast('Profile updated successfully')
     } catch (err) {
       console.error(err)
@@ -145,14 +168,7 @@ const ProfileContent = () => {
     ? format(new Date(profile.lastLogin), 'dd MMM yyyy · HH:mm')
     : 'First session'
 
-  const dashboardLink =
-    role === 'super-admin'
-      ? '/admin/control'
-      : role === 'admin'
-        ? '/admin/overview'
-        : role === 'teacher'
-          ? '/team'
-          : '/dashboard'
+  const dashboardLink = getWorkspaceRouteForRole(role)
 
   if (authLoading) {
     return (
@@ -233,7 +249,12 @@ const ProfileContent = () => {
             <h2 className="mb-1 fw-bold">{form.fullName || 'Your Profile'}</h2>
             <p className="text-muted mb-2">{profile?.email || user?.email}</p>
             <div className="d-flex flex-wrap gap-2">
-              <CBadge color={ROLE_COLORS[role] || 'secondary'}>{role || 'user'}</CBadge>
+              <CBadge color={ROLE_COLORS[role] || getRoleBadgeColor(role)}>{getRoleLabel(role)}</CBadge>
+              {form.district && (
+                <CBadge color="light" className="text-dark border">
+                  {form.district} district
+                </CBadge>
+              )}
               <CBadge color={subActive ? 'success' : 'warning'}>
                 {subActive ? 'Subscription active' : 'Subscription inactive'}
               </CBadge>
@@ -280,6 +301,26 @@ const ProfileContent = () => {
                   placeholder="+26599XXXXXXX"
                 />
               </div>
+              {roleUsesDistrict(role) && (
+                <div className="mb-4">
+                  <CFormLabel>Operating district *</CFormLabel>
+                  <CFormSelect
+                    value={form.district}
+                    onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
+                    required
+                  >
+                    <option value="">Select your district</option>
+                    {MALAWI_DISTRICTS.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </CFormSelect>
+                  <div className="form-text">
+                    Admins see this on the dashboard so they know where you operate.
+                  </div>
+                </div>
+              )}
               <CButton color="primary" type="submit" disabled={saving}>
                 {saving ? <CSpinner size="sm" className="me-2" /> : <CIcon icon={cilCheckCircle} className="me-2" />}
                 Save changes
@@ -345,7 +386,7 @@ const ProfileContent = () => {
           </div>
 
           {/* School stats */}
-          {(role === 'admin' || role === 'super-admin' || role === 'teacher' || stats.students > 0) && (
+          {(SCHOOL_DASHBOARD_ROLES.includes(role) || role === 'student' || stats.students > 0) && (
             <div className="sms-settings-card">
               <h5 className="sms-settings-card-title">Your school data</h5>
               {statsLoading ? (

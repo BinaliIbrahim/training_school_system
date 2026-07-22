@@ -139,11 +139,29 @@ import {
 import { notifyCrud } from '../../utils/notifications';
 import { matchesSearchQuery } from '../../utils/search';
 import { useAppToast } from '../../hooks/useAppToast';
-import { StudentStatusBadge, StudentEligibilityBanner } from '../../components/dashboard/StudentEligibility';
-import BackupDownloadButton from '../../components/dashboard/BackupDownloadButton';
-import BackupImportButton from '../../components/dashboard/BackupImportButton';
 import AdminQuickStart from '../../components/dashboard/AdminQuickStart';
-import { fetchSchoolBackupData } from '../../utils/csvBackup';
+import { StudentStatusBadge, StudentEligibilityBanner } from '../../components/dashboard/StudentEligibility';
+import {
+  SCHOOL_DASHBOARD_ROLES,
+  getRoleLabel,
+  formatTeamMemberLabel,
+} from '../../constants/roles';
+
+const UNASSIGNED_DISTRICT = '__unassigned__';
+
+const studentMatchesDistrict = (student, districtFilter, managedUsers) => {
+  if (!districtFilter) return true;
+  const owner = managedUsers.find((u) => u.id === student.ownerId);
+  if (!owner) return false;
+  if (districtFilter === UNASSIGNED_DISTRICT) return !owner.district;
+  return owner.district === districtFilter;
+};
+
+const userMatchesDistrict = (user, districtFilter) => {
+  if (!districtFilter) return true;
+  if (districtFilter === UNASSIGNED_DISTRICT) return !user.district;
+  return user.district === districtFilter;
+};
 
 const formatMK = (amount) =>
   new Intl.NumberFormat('en-MW', {
@@ -252,6 +270,7 @@ const SchoolDashboard = () => {
   const [filterCourse, setFilterCourse] = useState('');
   const [filterCohort, setFilterCohort] = useState('');
   const [filterUser, setFilterUser] = useState('');
+  const [filterDistrict, setFilterDistrict] = useState('');
   const [studentOwnerId, setStudentOwnerId] = useState('');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('');
@@ -304,6 +323,41 @@ const SchoolDashboard = () => {
     const team = managedUsers.filter((u) => u.userType === 'managed')
     return team.length > 0 ? team : managedUsers
   }, [managedUsers, userRole, user?.uid]);
+
+  const isSelfOnlyOwner = userRole === 'teacher';
+
+  const districtFilterOptions = useMemo(() => {
+    const fromTeam = new Set();
+    let hasUnassigned = false;
+    managedUsers
+      .filter((u) => u.userType === 'managed')
+      .forEach((u) => {
+        if (u.district) fromTeam.add(u.district);
+        else hasUnassigned = true;
+      });
+    return {
+      districts: [...fromTeam].sort((a, b) => a.localeCompare(b)),
+      hasUnassigned,
+    };
+  }, [managedUsers]);
+
+  const showDistrictFilter = useMemo(() => {
+    if (['admin', 'super-admin'].includes(userRole)) return managedUsers.length > 1;
+    return districtFilterOptions.districts.length > 0 || districtFilterOptions.hasUnassigned;
+  }, [userRole, managedUsers.length, districtFilterOptions]);
+
+  const usersForFilter = useMemo(() => {
+    if (!filterDistrict) return managedUsers;
+    return managedUsers.filter((u) => userMatchesDistrict(u, filterDistrict));
+  }, [managedUsers, filterDistrict]);
+
+  useEffect(() => {
+    if (!filterDistrict || !filterUser) return;
+    const selected = managedUsers.find((u) => u.id === filterUser);
+    if (selected && !userMatchesDistrict(selected, filterDistrict)) {
+      setFilterUser('');
+    }
+  }, [filterDistrict, filterUser, managedUsers]);
 
   const applyCourseToStudentForm = (courseId, prevForm) => ({
     ...prevForm,
@@ -360,8 +414,8 @@ const SchoolDashboard = () => {
         setUserRole(userRole);
         setUserProfile(data);
 
-        if (!['admin', 'super-admin', 'teacher'].includes(userRole)) {
-          showAlert('Access denied. Admin or Teacher privileges required.', 'danger');
+        if (!SCHOOL_DASHBOARD_ROLES.includes(userRole)) {
+          showAlert('Access denied. You do not have permission to view this dashboard.', 'danger');
           navigate('/dashboard');
           return;
         }
@@ -472,12 +526,33 @@ const SchoolDashboard = () => {
           userList.push(...managedUsersList);
         }
         catalogOwnerIds = [userId];
-      } else if (role === 'teacher') {
-        userList = [{ id: userId, userType: 'self' }];
-        if (managedBy) {
-          catalogOwnerIds = [managedBy];
-        } else if (catalogId) {
-          catalogOwnerIds = [catalogId];
+      } else if (['teacher', 'accounts', 'procurement'].includes(role)) {
+        if (role === 'teacher' || !managedBy) {
+          userList = [{ id: userId, userType: 'self' }];
+          if (managedBy) {
+            catalogOwnerIds = [managedBy];
+          } else if (catalogId) {
+            catalogOwnerIds = [catalogId];
+          }
+        } else {
+          const adminDoc = await getDoc(doc(db, 'users', managedBy));
+          if (adminDoc.exists()) {
+            const adminData = adminDoc.data();
+            userList = [];
+            for (const managedId of adminData.managedUserIds || []) {
+              const userDoc = await getDoc(doc(db, 'users', managedId));
+              if (userDoc.exists()) {
+                userList.push({
+                  id: managedId,
+                  ...userDoc.data(),
+                  userType: 'managed',
+                });
+              }
+            }
+            catalogOwnerIds = [managedBy];
+          } else {
+            userList = [{ id: userId, userType: 'self' }];
+          }
         }
       }
       
@@ -763,15 +838,16 @@ const SchoolDashboard = () => {
       const matchesCourse = !filterCourse || s.courseId === filterCourse;
       const matchesCohort = !filterCohort || s.cohortId === filterCohort;
       const matchesUser = !filterUser || s.ownerId === filterUser;
+      const matchesDistrict = studentMatchesDistrict(s, filterDistrict, managedUsers);
       const matchesPaymentMethod = !filterPaymentMethod || s.modeOfPayment === filterPaymentMethod;
       const matchesPaymentStatus = !filterPaymentStatus ||
         (filterPaymentStatus === 'paid' ? calcBalance(s) <= 0 : calcBalance(s) > 0);
-      return matchesSearch && matchesCourse && matchesCohort && matchesUser && matchesPaymentMethod && matchesPaymentStatus;
+      return matchesSearch && matchesCourse && matchesCohort && matchesUser && matchesDistrict && matchesPaymentMethod && matchesPaymentStatus;
     });
-  }, [filteredStudentsByDate, searchQuery, filterCourse, filterCohort, filterUser, filterPaymentMethod, filterPaymentStatus, allCourses, catalogOwnerId]);
+  }, [filteredStudentsByDate, searchQuery, filterCourse, filterCohort, filterUser, filterDistrict, filterPaymentMethod, filterPaymentStatus, allCourses, catalogOwnerId, managedUsers]);
 
   const hasActiveStudentFilters = Boolean(
-    searchQuery || filterUser || filterPaymentMethod || filterPaymentStatus || filterCourse || filterCohort,
+    searchQuery || filterUser || filterDistrict || filterPaymentMethod || filterPaymentStatus || filterCourse || filterCohort,
   );
 
   const displayCohorts = useMemo(() => {
@@ -938,6 +1014,7 @@ const SchoolDashboard = () => {
     return managedUsers
       .filter((u) => u.userType === 'managed')
       .filter((u) => !filterUser || u.id === filterUser)
+      .filter((u) => userMatchesDistrict(u, filterDistrict))
       .map((managedUser) => {
         const userStudents = filteredStudents.filter((s) => s.ownerId === managedUser.id);
         let totalDue = 0;
@@ -969,7 +1046,7 @@ const SchoolDashboard = () => {
           paymentCount: allPayments.filter((p) => p.ownerId === managedUser.id).length,
         };
       });
-  }, [managedUsers, filteredStudents, filterUser, allCourses, allPayments, catalogOwnerId]);
+  }, [managedUsers, filteredStudents, filterUser, filterDistrict, allCourses, allPayments, catalogOwnerId]);
 
   // -------------------------------------------------
   // HELPER FUNCTIONS
@@ -1097,7 +1174,7 @@ const SchoolDashboard = () => {
   const openAddStudent = () => {
     if (!requirePermission('create')) return;
     const defaultOwner =
-      userRole === 'teacher'
+      isSelfOnlyOwner
         ? user?.uid || ''
         : studentOwnerOptions[0]?.id || filterUser || user?.uid || '';
     setStudentOwnerId(defaultOwner);
@@ -1285,7 +1362,7 @@ const SchoolDashboard = () => {
 
     try {
       const ownerId =
-        userRole === 'teacher' ? user?.uid : studentOwnerId || filterUser || user?.uid;
+        isSelfOnlyOwner ? user?.uid : studentOwnerId || filterUser || user?.uid;
       if (!ownerId) {
         showAlert('Please select which team member this student belongs to', 'danger');
         return;
@@ -1822,7 +1899,7 @@ const SchoolDashboard = () => {
     );
   }
 
-  if (!subscriptionOk || !['admin', 'super-admin', 'teacher'].includes(userRole)) {
+  if (!subscriptionOk || !SCHOOL_DASHBOARD_ROLES.includes(userRole)) {
     return (
       <CRow className="justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
         <CCol xs="auto" className="text-center">
@@ -2396,7 +2473,7 @@ const SchoolDashboard = () => {
             </CCol>
             <CCol md={4}>
               <CFormLabel>Owner *</CFormLabel>
-              {userRole === 'teacher' ? (
+              {isSelfOnlyOwner ? (
                 <>
                   <CFormInput
                     value={userProfile?.fullName || user?.email || 'You'}
@@ -2414,8 +2491,7 @@ const SchoolDashboard = () => {
                     <option value="">Select team member</option>
                     {studentOwnerOptions.map((u) => (
                       <option key={u.id} value={u.id}>
-                        {u.fullName || u.email}
-                        {u.role ? ` (${u.role})` : ''}
+                        {formatTeamMemberLabel(u)}
                       </option>
                     ))}
                   </CFormSelect>
@@ -3083,17 +3159,32 @@ const SchoolDashboard = () => {
         </CCol>
         <CCol md={6}>
           <CRow className="g-2">
-            <CCol xs={6} md={4}>
+            <CCol xs={6} md={showDistrictFilter ? 3 : 4}>
               <CFormSelect value={filterUser} onChange={(e) => setFilterUser(e.target.value)}>
-                <option value="">All Users</option>
-                {managedUsers.map(u => (
+                <option value="">All team members</option>
+                {usersForFilter.map(u => (
                   <option key={u.id} value={u.id}>
-                    {u.fullName || u.email} {u.id === user?.uid && '(You)'}
+                    {formatTeamMemberLabel(u)} {u.id === user?.uid && '(You)'}
                   </option>
                 ))}
               </CFormSelect>
             </CCol>
-            <CCol xs={6} md={4}>
+            {showDistrictFilter && (
+              <CCol xs={6} md={3}>
+                <CFormSelect value={filterDistrict} onChange={(e) => setFilterDistrict(e.target.value)}>
+                  <option value="">All districts</option>
+                  {districtFilterOptions.districts.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                  {districtFilterOptions.hasUnassigned && (
+                    <option value={UNASSIGNED_DISTRICT}>Unassigned district</option>
+                  )}
+                </CFormSelect>
+              </CCol>
+            )}
+            <CCol xs={6} md={showDistrictFilter ? 3 : 4}>
               <CFormSelect value={filterPaymentMethod} onChange={(e) => setFilterPaymentMethod(e.target.value)}>
                 <option value="">All Methods</option>
                 <option value="Cash">Cash</option>
@@ -3102,7 +3193,7 @@ const SchoolDashboard = () => {
                 <option value="Cheque">Cheque</option>
               </CFormSelect>
             </CCol>
-            <CCol xs={6} md={4}>
+            <CCol xs={6} md={showDistrictFilter ? 3 : 4}>
               <CFormSelect value={filterPaymentStatus} onChange={(e) => setFilterPaymentStatus(e.target.value)}>
                 <option value="">All Status</option>
                 <option value="paid">Paid</option>
@@ -3118,6 +3209,15 @@ const SchoolDashboard = () => {
         <CAlert color="info" className="py-2 mb-3 sms-filter-summary">
           Showing <strong>{filteredStudents.length}</strong> of{' '}
           <strong>{filteredStudentsByDate.length}</strong> students in this {dateFilter.toLowerCase()} view
+          {filterDistrict && (
+            <>
+              {' '}
+              · district:{' '}
+              <strong>
+                {filterDistrict === UNASSIGNED_DISTRICT ? 'Unassigned' : filterDistrict}
+              </strong>
+            </>
+          )}
           {displayCohorts.length !== filteredCohorts.length && (
             <> · <strong>{displayCohorts.length}</strong> matching cohort{displayCohorts.length !== 1 ? 's' : ''}</>
           )}
@@ -3130,27 +3230,6 @@ const SchoolDashboard = () => {
       {/* Action Buttons */}
       {activeSection !== 'cohortDetails' && (
       <div className="sms-action-bar">
-        {(userRole === 'admin' || userRole === 'super-admin') && (
-          <>
-            <BackupDownloadButton
-              color="secondary"
-              onBackup={() =>
-                fetchSchoolBackupData(db, { id: user.uid, ...userProfile, role: userRole })
-              }
-              onSuccess={(msg) => appToast.success(msg)}
-              onError={(msg) => appToast.error(msg)}
-            />
-            <BackupImportButton
-              db={db}
-              profile={{ id: user?.uid, ...userProfile, role: userRole }}
-              color="secondary"
-              label="Import backup"
-              onSuccess={(msg) => appToast.success(msg)}
-              onError={(msg) => appToast.error(msg)}
-              onComplete={reloadData}
-            />
-          </>
-        )}
         {canEdit && (
           <CButton color="primary" variant="outline" onClick={exportAllStudentsPDF}>
             <CIcon icon={cilCloudDownload} className="me-1" /> Export Students ({hasActiveStudentFilters ? filteredStudents.length : allStudents.length})
@@ -3188,6 +3267,18 @@ const SchoolDashboard = () => {
       {userRole === 'teacher' && (
         <CAlert color="info" className="mb-3">
           Courses and cohorts are set by your school admin. Use the shared catalog when enrolling students — you cannot create duplicate programmes.
+        </CAlert>
+      )}
+
+      {userRole === 'accounts' && (
+        <CAlert color="warning" className="mb-3">
+          Accounts workspace — record and verify payments, audit balances, and follow up on outstanding fees. Your admin can grant create or delete access in Team.
+        </CAlert>
+      )}
+
+      {userRole === 'procurement' && (
+        <CAlert color="info" className="mb-3">
+          Procurement workspace — track equipment and certificate handouts for eligible students. Your admin controls what you can create, edit, or delete in Team.
         </CAlert>
       )}
 
@@ -3235,6 +3326,10 @@ const SchoolDashboard = () => {
         <>
           {(userRole === 'admin' || userRole === 'super-admin') ? (
             <SectionGuide section="adminHome" />
+          ) : userRole === 'accounts' ? (
+            <SectionGuide section="accounts" />
+          ) : userRole === 'procurement' ? (
+            <SectionGuide section="procurement" />
           ) : (
             <SectionGuide section="overview" />
           )}

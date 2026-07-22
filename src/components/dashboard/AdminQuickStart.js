@@ -89,8 +89,8 @@ const SUPER_ADMIN_STEPS = [
   {
     icon: cilCloudUpload,
     title: 'Backup data',
-    detail: 'Download or restore a full ZIP backup from the panel below.',
-    to: '/admin/control',
+    detail: 'Download or restore a full ZIP backup in Settings.',
+    to: '/settings',
     color: 'cyan',
   },
   {

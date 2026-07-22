@@ -35,6 +35,7 @@ import {
   getPlanLabel,
 } from '../../../utils/subscription';
 import { isUserApproved, APPROVAL } from '../../../utils/permissions';
+import { getWorkspaceRouteForRole } from '../../../constants/roles';
 
 const FEATURES = [
   'Real-time student & payment tracking',
@@ -325,10 +326,7 @@ function Subscription() {
       return;
     }
     const role = userData?.role;
-    if (role === 'admin') navigate('/admin/overview');
-    else if (role === 'super-admin') navigate('/admin/control');
-    else if (role === 'teacher') navigate('/team');
-    else navigate('/dashboard');
+    navigate(getWorkspaceRouteForRole(role));
   };
 
   const planAmount = getSubscriptionAmount(userData?.role);

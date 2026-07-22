@@ -47,9 +47,25 @@ const GUIDES = {
   coordinator: {
     title: 'Your workspace',
     steps: [
+      'Set your operating district in Profile so admins know where you work',
       'Overview — KPIs and charts for your students',
       'Cohorts — open one to see students and payments inside',
-      'Payments — all transactions across your cohorts',
+    ],
+  },
+  accounts: {
+    title: 'Accounts workspace',
+    steps: [
+      'Use Payment Audit to review every fee received across your team',
+      'Record payments from student Actions when balances are cleared',
+      'Ask your admin in Team if you need create or delete access',
+    ],
+  },
+  procurement: {
+    title: 'Procurement workspace',
+    steps: [
+      'Look for students marked eligible for equipment and certificates',
+      'Update student records when kits or certs are issued',
+      'Your admin can adjust create, edit, or delete permissions in Team',
     ],
   },
   coordinatorStudents: {

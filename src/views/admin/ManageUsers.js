@@ -66,32 +66,22 @@ import {
   permissionsFromForm,
   permissionsSummary,
   DEFAULT_PERMISSIONS,
-  COORDINATOR_PERMISSIONS,
 } from '../../utils/permissions'
 import { notifyUser, notifyUsers, NOTIFICATION_TYPES } from '../../utils/notifications'
 import { transferUserData } from '../../utils/transferUserData'
+import { MALAWI_DISTRICTS } from '../../constants/districts'
+import {
+  TEAM_ROLES_CREATABLE,
+  ELEVATED_ROLES,
+  getRoleLabel,
+  getRoleBadgeColor,
+  getRolePurpose,
+  getDefaultPermissionsForRole,
+  roleUsesDistrict,
+} from '../../constants/roles'
 
-const ROLES = [
-  { value: 'student', label: 'Student / Coordinator' },
-  { value: 'teacher', label: 'Teacher' },
-  { value: 'parent', label: 'Parent' },
-]
-
-const roleBadgeColor = (role) => {
-  const map = {
-    admin: 'primary',
-    'super-admin': 'danger',
-    teacher: 'info',
-    student: 'success',
-    parent: 'secondary',
-  }
-  return map[role] || 'light'
-}
-
-const roleLabel = (role) => {
-  const all = [...ROLES, { value: 'admin', label: 'Admin' }, { value: 'super-admin', label: 'Super Admin' }]
-  return all.find((r) => r.value === role)?.label || role
-}
+const roleBadgeColor = getRoleBadgeColor
+const roleLabel = getRoleLabel
 
 const formatSubDate = (date) => {
   const d = toJsDate(date)
@@ -105,6 +95,7 @@ const emptyCreateForm = {
   phone: '',
   password: '',
   role: 'student',
+  district: '',
 }
 
 const ManageUsers = () => {
@@ -199,7 +190,7 @@ const ManageUsers = () => {
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) =>
-      matchesSearchQuery(search, u.fullName, u.email, u.role, u.phone),
+      matchesSearchQuery(search, u.fullName, u.email, u.role, u.phone, u.district, getRoleLabel(u.role)),
     )
   }, [users, search])
 
@@ -235,6 +226,7 @@ const ManageUsers = () => {
       email: user.email || '',
       phone: user.phone || '',
       role: user.role || 'student',
+      district: user.district || '',
       active: user.active !== false,
       create: perms.create,
       edit: perms.edit,
@@ -258,6 +250,11 @@ const ManageUsers = () => {
       if (createForm.password.length < 6) {
         throw new Error('Password must be at least 6 characters.')
       }
+      if (roleUsesDistrict(createForm.role) && !createForm.district) {
+        throw new Error('Operating district is required for this role.')
+      }
+
+      const defaultPerms = getDefaultPermissionsForRole(createForm.role)
 
       const cred = await createUserWithEmailAndPassword(
         secondaryAuth,
@@ -270,6 +267,7 @@ const ManageUsers = () => {
         email: createForm.email.trim(),
         fullName: createForm.fullName.trim(),
         phone: createForm.phone || null,
+        district: roleUsesDistrict(createForm.role) ? createForm.district : null,
         role: createForm.role,
         roleID: createForm.role,
         active: true,
@@ -278,11 +276,8 @@ const ManageUsers = () => {
         managedBy: currentAdmin.id,
         lastLogin: null,
         hasUsedTrial: false,
-        permissions:
-          createForm.role === 'student'
-            ? { ...COORDINATOR_PERMISSIONS }
-            : { ...DEFAULT_PERMISSIONS },
-        canWrite: createForm.role === 'student',
+        permissions: { ...defaultPerms },
+        canWrite: defaultPerms.create || defaultPerms.edit || defaultPerms.delete,
         approvalStatus: needsApproval ? APPROVAL.PENDING : APPROVAL.APPROVED,
       }
 
@@ -344,7 +339,13 @@ const ManageUsers = () => {
         approvedAt: new Date().toISOString(),
         active: approved,
         ...(approved && !user.permissions
-          ? { permissions: { ...COORDINATOR_PERMISSIONS }, canWrite: true }
+          ? (() => {
+              const perms = getDefaultPermissionsForRole(user.role)
+              return {
+                permissions: { ...perms },
+                canWrite: perms.create || perms.edit || perms.delete,
+              }
+            })()
           : {}),
       })
 
@@ -393,6 +394,9 @@ const ManageUsers = () => {
         fullName: editForm.fullName.trim(),
         phone: editForm.phone || null,
         active: editForm.active,
+        district: roleUsesDistrict(editForm.role || selectedUser.role)
+          ? editForm.district || null
+          : null,
       }
 
       const canSetPermissions =
@@ -530,7 +534,13 @@ const ManageUsers = () => {
       await updateDoc(doc(db, 'users', found.id), {
         managedBy: currentAdmin.id,
         ...(!foundData.permissions
-          ? { permissions: { ...COORDINATOR_PERMISSIONS }, canWrite: true }
+          ? (() => {
+              const perms = getDefaultPermissionsForRole(foundData.role)
+              return {
+                permissions: { ...perms },
+                canWrite: perms.create || perms.edit || perms.delete,
+              }
+            })()
           : foundData.permissions?.create && !foundData.canWrite
             ? { canWrite: true }
             : {}),
@@ -610,7 +620,8 @@ const ManageUsers = () => {
                     <div>
                       <strong>{u.fullName}</strong>
                       <div className="small text-muted">
-                        {u.email} · {u.role} · by {u.createdBy ? 'admin' : 'system'}
+                        {u.email} · {roleLabel(u.role)}
+                        {u.district ? ` · ${u.district}` : ''} · by {u.createdBy ? 'admin' : 'system'}
                       </div>
                     </div>
                     <div className="d-flex gap-1">
@@ -730,6 +741,7 @@ const ManageUsers = () => {
                   <CTableRow>
                     <CTableHeaderCell>User</CTableHeaderCell>
                     <CTableHeaderCell>Role</CTableHeaderCell>
+                    <CTableHeaderCell>District</CTableHeaderCell>
                     <CTableHeaderCell>Access</CTableHeaderCell>
                     <CTableHeaderCell>Status</CTableHeaderCell>
                     <CTableHeaderCell>Subscription</CTableHeaderCell>
@@ -758,6 +770,13 @@ const ManageUsers = () => {
                           <span className={`sms-role-pill sms-role-pill--${(u.role || 'student').replace(/-/g, '')}`}>
                             {roleLabel(u.role)}
                           </span>
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          {u.district ? (
+                            <span className="sms-district-pill">{u.district}</span>
+                          ) : (
+                            <span className="text-muted small">—</span>
+                          )}
                         </CTableDataCell>
                         <CTableDataCell>
                           {!['admin', 'super-admin'].includes(u.role) ? (
@@ -847,7 +866,12 @@ const ManageUsers = () => {
                       </div>
                       <div className="d-flex gap-1 flex-wrap justify-content-end">
                         {u.isSelf && <CBadge color="dark">You</CBadge>}
-                        <CBadge color={roleBadgeColor(u.role)}>{u.role}</CBadge>
+                        <CBadge color={roleBadgeColor(u.role)}>{roleLabel(u.role)}</CBadge>
+                        {u.district && (
+                          <CBadge color="light" className="text-dark border">
+                            {u.district}
+                          </CBadge>
+                        )}
                         {u.approvalStatus && u.approvalStatus !== APPROVAL.APPROVED && (
                           <CBadge color={approval.color}>{approval.text}</CBadge>
                         )}
@@ -978,15 +1002,38 @@ const ManageUsers = () => {
               <label className="form-label">Role</label>
               <CFormSelect
                 value={createForm.role}
-                onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
+                onChange={(e) =>
+                  setCreateForm({
+                    ...createForm,
+                    role: e.target.value,
+                    district: roleUsesDistrict(e.target.value) ? createForm.district : '',
+                  })
+                }
               >
-                {ROLES.map((r) => (
+                {TEAM_ROLES_CREATABLE.map((r) => (
                   <option key={r.value} value={r.value}>
                     {r.label}
                   </option>
                 ))}
               </CFormSelect>
+              <small className="text-muted d-block mt-1">{getRolePurpose(createForm.role)}</small>
             </CCol>
+            {roleUsesDistrict(createForm.role) && (
+              <CCol md={6}>
+                <label className="form-label">Operating district *</label>
+                <CFormSelect
+                  value={createForm.district}
+                  onChange={(e) => setCreateForm({ ...createForm, district: e.target.value })}
+                >
+                  <option value="">Select district</option>
+                  {MALAWI_DISTRICTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CCol>
+            )}
             <CCol md={12}>
               <label className="form-label">Temporary Password</label>
               <CFormInput
@@ -1033,11 +1080,34 @@ const ManageUsers = () => {
                 <label className="form-label">Role</label>
                 <CFormSelect
                   value={editForm.role}
-                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      role: e.target.value,
+                      district: roleUsesDistrict(e.target.value) ? editForm.district : '',
+                    })
+                  }
                 >
-                  {[...ROLES, { value: 'admin', label: 'Admin' }].map((r) => (
+                  {[...TEAM_ROLES_CREATABLE, ...ELEVATED_ROLES.filter((r) => r.value === 'admin')].map((r) => (
                     <option key={r.value} value={r.value}>
                       {r.label}
+                    </option>
+                  ))}
+                </CFormSelect>
+                <small className="text-muted d-block mt-1">{getRolePurpose(editForm.role)}</small>
+              </CCol>
+            )}
+            {roleUsesDistrict(editForm.role || selectedUser?.role) && (
+              <CCol md={6}>
+                <label className="form-label">Operating district</label>
+                <CFormSelect
+                  value={editForm.district || ''}
+                  onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
+                >
+                  <option value="">Select district</option>
+                  {MALAWI_DISTRICTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
                     </option>
                   ))}
                 </CFormSelect>
@@ -1082,7 +1152,7 @@ const ManageUsers = () => {
                     />
                   </div>
                   <small className="text-muted">
-                    Grant only the actions this user needs — they can mix create, edit, and delete.
+                    Grant only the actions this user needs — admins and super-admins can mix create, edit, and delete freely.
                   </small>
                 </CCol>
               )}

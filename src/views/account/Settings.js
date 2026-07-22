@@ -21,13 +21,20 @@ import {
   cilPeople,
   cilLockLocked,
   cilCheckCircle,
+  cilCloudDownload,
+  cilDescription,
 } from '@coreui/icons'
 import { useAuth } from '../../hooks/useAuth'
 import { useUserPreferences } from '../../hooks/useUserPreferences'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import PwaInstallBanner from '../../components/PwaInstallBanner'
+import UserManual from '../../components/account/UserManual'
+import BackupDownloadButton from '../../components/dashboard/BackupDownloadButton'
+import BackupImportButton from '../../components/dashboard/BackupImportButton'
+import { fetchSchoolBackupData } from '../../utils/csvBackup'
 import { sendPasswordResetEmail } from 'firebase/auth'
-import { auth } from '../../firebase'
+import { auth, db } from '../../firebase'
+import { getWorkspaceRouteForRole } from '../../constants/roles'
 
 const THEME_OPTIONS = [
   { id: 'light', label: 'Light', icon: cilSun, desc: 'Bright and clean for daytime use' },
@@ -84,14 +91,11 @@ const SettingsContent = () => {
     }
   }
 
-  const dashboardLink =
-    role === 'super-admin'
-      ? '/admin/control'
-      : role === 'admin'
-        ? '/admin/overview'
-        : role === 'teacher'
-          ? '/team'
-          : '/dashboard'
+  const dashboardLink = getWorkspaceRouteForRole(role)
+
+  const isSuperAdmin = role === 'super-admin'
+  const isSchoolAdmin = role === 'admin' || isSuperAdmin
+  const backupProfile = user?.uid ? { id: user.uid, ...profile, role } : null
 
   if (loading) {
     return (
@@ -217,6 +221,56 @@ const SettingsContent = () => {
               disabled={saving}
             />
           </div>
+
+          {/* User guide */}
+          <div className="sms-settings-card mb-4">
+            <h5 className="sms-settings-card-title">
+              <CIcon icon={cilDescription} className="me-2" />
+              User guide
+            </h5>
+            <p className="sms-settings-card-sub">
+              Step-by-step instructions for your role — download a PDF to share or print.
+            </p>
+            <UserManual compact />
+            <CButton color="primary" variant="outline" size="sm" className="mt-3" as={NavLink} to="/help">
+              Open full guide
+            </CButton>
+          </div>
+
+          {isSchoolAdmin && backupProfile && (
+            <div className="sms-settings-card mb-4 border-0 sms-backup-panel">
+              <h5 className="sms-settings-card-title">
+                <CIcon icon={cilCloudDownload} className="me-2" />
+                Full system backup
+              </h5>
+              <p className="sms-settings-card-sub">
+                {isSuperAdmin
+                  ? 'Export or restore all platform data as CSV files in a ZIP — users, students, courses, cohorts, payments, and public sites.'
+                  : 'Export or restore your school data as CSV files in a ZIP — team accounts, students, catalog, payments, and your public site.'}
+              </p>
+              <div className="d-flex flex-wrap gap-2">
+                <BackupDownloadButton
+                  color={isSuperAdmin ? 'danger' : 'primary'}
+                  variant="solid"
+                  size="sm"
+                  label="Download backup ZIP"
+                  onBackup={() => fetchSchoolBackupData(db, backupProfile)}
+                  onSuccess={(msg) => showToast(msg)}
+                  onError={(msg) => showToast(msg, 'danger')}
+                />
+                <BackupImportButton
+                  db={db}
+                  profile={backupProfile}
+                  color={isSuperAdmin ? 'danger' : 'primary'}
+                  variant="outline"
+                  size="sm"
+                  label="Import backup ZIP"
+                  onSuccess={(msg) => showToast(msg)}
+                  onError={(msg) => showToast(msg, 'danger')}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Regional */}
           <div className="sms-settings-card">

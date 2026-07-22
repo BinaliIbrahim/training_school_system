@@ -9,6 +9,7 @@ const Charts = React.lazy(() => import('./views/charts/Charts'))
 const Profile = React.lazy(() => import('./views/account/Profile'))
 const Settings = React.lazy(() => import('./views/account/Settings'))
 const SchoolSiteBuilder = React.lazy(() => import('./views/admin/SchoolSiteBuilder'))
+const UserGuide = React.lazy(() => import('./views/account/UserGuide'))
 const LoginLogs = React.lazy(() => import('./views/admin/LoginLogs'))
 
 // CoreUI demo pages (optional / legacy)
@@ -48,6 +49,7 @@ const routes = [
   { path: '/team', name: 'My School', element: SchoolDashboard },
   { path: '/charts', name: 'Analytics', element: Charts },
   { path: '/admin/site', name: 'My School Website', element: SchoolSiteBuilder },
+  { path: '/help', name: 'User guide', element: UserGuide },
   { path: '/profile', name: 'Profile', element: Profile },
   { path: '/settings', name: 'Settings', element: Settings },
 

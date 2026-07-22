@@ -11,6 +11,7 @@ import {
   cilTerminal,
   cilGlobeAlt,
   cilList,
+  cilDescription,
 } from '@coreui/icons'
 import { CNavItem, CNavTitle } from '@coreui/react'
 
@@ -43,7 +44,7 @@ export const getNavigationForRole = (role) => {
       item('Analytics', '/charts', cilChartPie),
       item('My Website', '/admin/site', cilGlobeAlt, { color: 'info', text: 'New' }),
     )
-  } else if (role === 'teacher') {
+  } else if (role === 'teacher' || role === 'accounts' || role === 'procurement') {
     nav.push(item('My School', '/team', cilLibrary))
   } else {
     nav.push(
@@ -53,6 +54,7 @@ export const getNavigationForRole = (role) => {
   }
 
   nav.push({ component: CNavTitle, name: 'Account' })
+  nav.push(item('User guide', '/help', cilDescription))
   nav.push(item('Profile', '/profile', cilUser))
   nav.push(item('Settings', '/settings', cilSettings))
   nav.push(item('Subscription', '/subscription', cilCreditCard))

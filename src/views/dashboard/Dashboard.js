@@ -100,7 +100,8 @@ import { resolveCatalogOwnerId, mergeCatalogItems, findCourseForStudent, findCoh
 import CoordinatorDashboardView from '../../components/dashboard/CoordinatorDashboardView';
 import OutstandingBalancesPanel from '../../components/dashboard/OutstandingBalancesPanel';
 import { StudentStatusBadge, StudentEligibilityBanner } from '../../components/dashboard/StudentEligibility';
-import { canUserCreate, canUserEdit, canUserDelete, COORDINATOR_PERMISSIONS, permissionsSummary, permissionBlockReason } from '../../utils/permissions';
+import { canUserCreate, canUserEdit, canUserDelete, permissionsSummary, permissionBlockReason } from '../../utils/permissions';
+import { getDefaultPermissionsForRole } from '../../constants/roles';
 import { notifyCrud } from '../../utils/notifications';
 import { matchesSearchQuery } from '../../utils/search';
 import { useAppToast } from '../../hooks/useAppToast';
@@ -314,12 +315,14 @@ const Dashboard = () => {
 
         // Legacy accounts missing permissions — bootstrap once (admin/super-admin can revoke)
         if (!data.permissions && !['admin', 'super-admin'].includes(data.role)) {
+          const defaultPerms = getDefaultPermissionsForRole(data.role)
+          const canWrite = defaultPerms.create || defaultPerms.edit || defaultPerms.delete
           try {
             await updateDoc(userRef, {
-              permissions: { ...COORDINATOR_PERMISSIONS },
-              canWrite: true,
+              permissions: { ...defaultPerms },
+              canWrite,
             });
-            data = { ...data, permissions: { ...COORDINATOR_PERMISSIONS }, canWrite: true };
+            data = { ...data, permissions: { ...defaultPerms }, canWrite };
           } catch (_) {
             /* requires updated firestore.rules to be published */
           }
@@ -2499,6 +2502,7 @@ const Dashboard = () => {
         workspaceOwnerId={user?.uid}
         accessSummary={userProfile ? permissionsSummary(userProfile) : ''}
         permissionBlock={permissionBlock}
+        operatingDistrict={userProfile?.district}
       />
     </>
   );

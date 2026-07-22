@@ -45,9 +45,9 @@ import {
   formatLogTimestamp,
   formatLastSeen,
   isUserActive,
-  roleBadgeColor,
   toPresenceDate,
 } from '../../utils/loginLogs'
+import { getRoleBadgeColor, getRoleLabel } from '../../constants/roles'
 import { matchesSearchQuery } from '../../utils/search'
 
 const LOG_LIMIT = 250
@@ -397,8 +397,8 @@ const LoginLogs = () => {
                         {presence?.lastSeen}
                       </div>
                     </div>
-                    <CBadge color={roleBadgeColor(member.role)}>
-                      {member.isSelf ? 'You' : member.role}
+                    <CBadge color={getRoleBadgeColor(member.role)}>
+                      {member.isSelf ? 'You' : getRoleLabel(member.role)}
                     </CBadge>
                   </div>
                 )
@@ -429,7 +429,7 @@ const LoginLogs = () => {
                 <option value="all">All roles</option>
                 {roleOptions.map((r) => (
                   <option key={r} value={r}>
-                    {r}
+                    {getRoleLabel(r)}
                   </option>
                 ))}
               </CFormSelect>
@@ -500,7 +500,7 @@ const LoginLogs = () => {
                             </div>
                           </CTableDataCell>
                           <CTableDataCell>
-                            <CBadge color={roleBadgeColor(log.role)}>{log.role}</CBadge>
+                            <CBadge color={getRoleBadgeColor(log.role)}>{getRoleLabel(log.role)}</CBadge>
                           </CTableDataCell>
                           <CTableDataCell>
                             <div className="d-flex align-items-center gap-2">
@@ -539,7 +539,7 @@ const LoginLogs = () => {
                             <div className="small text-muted">{log.email}</div>
                           </div>
                         </div>
-                        <CBadge color={roleBadgeColor(log.role)}>{log.role}</CBadge>
+                        <CBadge color={getRoleBadgeColor(log.role)}>{getRoleLabel(log.role)}</CBadge>
                       </div>
                       <div className="small text-muted mb-1">
                         {log.device?.browser} · {log.device?.platform} ·{' '}
